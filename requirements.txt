@@ -1,0 +1,9 @@
+redis==2.10.5
+numpy==1.11.0
+celery==4.0.2
+django==1.8.17
+requests==2.10.0
+MySQL-python==1.2.5
+django-suit==0.2.23
+beautifulsoup4==4.5.3
+python-memcached==1.53

@@ -1,0 +1,1032 @@
+{% extends "ues/frame.html" %}
+{% block title %} 小组信息 {% endblock %}
+{% block contain %}
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1><b> {{ squads.name }} </b>
+            <small>由 {{ squads.create_user }} 创建于 {{ squads.create_date }}</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i>小组</a></li>
+            <li class="active">小组信息</li>
+        </ol>
+    </section>
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">成员题数</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <table id="problem-count-table"></table>
+                    </div>
+                    <div class="box-footer" id="user-info" hidden>
+                        <label>最近动态</label>
+                        <table class="table table-hover" id="last-message"></table>
+                        <label>提交热点图</label>
+                        <div style="height: 200px;" id="cal-heatmap"></div><br/>
+                        <label>OJ所占比例及难度分布</label>
+                        <div id="oj-proportion" style="height: 545px;"></div>
+                    </div>
+                    <!-- /.box-body -->
+                </div>
+                <!-- /.box -->
+            </div>
+            <div class="col-md-4">
+                <!-- box -->
+                <div class="box box-primary">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">小组成员</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <table id="squads_users_table" class="table table-hover">
+                            <thead id="squads_users_thead">
+                            </thead>
+                            <tbody id="squads_users_tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- / .box -->
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-9">
+                <!-- box -->
+                <div class="box">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">能力对比</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <label>题数增长曲线</label>
+                        <div id="problem-count-line" style="height: 545px;"></div>
+                        <label>用户能力增长曲线</label>
+                        <div id="users-rating-line" style="height: 545px;"></div>
+                        <label>用户能力分布曲线</label>
+                        <div id="users-ability-line" style="height: 545px;"></div>
+                    </div>
+                </div>
+                <!-- / .box -->
+            </div>
+            <div class="col-md-3">
+                <!-- box -->
+                <div class="box box-primary">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">选择对比成员</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <div id="selected-div" class="items">
+                        </div>
+                    </div>
+                </div>
+                <!-- / .box -->
+            </div>
+        </div>
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+{% block page_js %}
+<script type="text/javascript">
+    let ECHARTS;
+    let SQUADS_ID = {{ squads.id }};
+    let CONFIG = {
+        days: [1, 7, 15, 30, 90, 180, 365, 1000],
+        rating: [0, 1000, 1500, 2000, 2500, 3000, 10000]
+    }
+    let REPO = [];
+
+    // {
+    //     'user1': {
+    //         'name': 'aaa',
+    //         'nickname': 'bbb',
+    //     },
+    //     ....
+    // }
+    let USERSINFO = {};
+
+    // {
+    //     'user1': {
+    //         'Pku': {
+    //             '1000': time,
+    //             '1001': time,
+    //             ...
+    //         },
+    //         'Hdu': {
+    //             ...
+    //         },
+    //         ...
+    //     }
+    //     ...
+    // }
+    let USERACINFO = {};
+    let USERACLIST = [];
+
+    // {
+    //     'user1': [
+    //         [time1, total1],
+    //         [time2, total2],
+    //         [time3, total3],
+    //         ...
+    //     ],
+    //     ...
+    // }
+    let USERACCOUNT = {};
+
+    // {
+    //     'Pku': {
+    //         'user1': [
+    //             {'date': xxx, 'rating': xxx},
+    //             {'date': xxx, 'rating': xxx},
+    //             ...
+    //         ],
+    //         ...
+    //     },
+    //     ...
+    // }
+    let USERRATING = {};
+    let PROBLEMRATING = {};
+
+    // {
+    //     'rmq': '数据结构',
+    //     '线段树': '数据结构',
+    //     '半平面交': '计算几何',
+    //     ...
+    // }
+    let CLASSIFYDICT = {};
+    let CLASSIFY = [];
+    // {
+    //     'Pku': {
+    //         '1000': ['rmq', '基本dp'],
+    //         '1001': ['动态规划'],
+    //         ...
+    //     },
+    //     'Hdu':{
+    //         ...
+    //     }
+    //     ...
+    // }
+    let PROBLEMCLASSIFY = {};
+
+    // {
+    //     user1: {
+    //         'overall': [xxx, xxx, ...],
+    //         'mainclass1': [xxx, xxx],
+    //         'mainclass2': [xxx, xxx],
+    //         ...
+    //     },
+    //     ...
+    // }
+    let USERABILITY = {};
+
+    Date.prototype.Format = function (fmt) { //author: meizz 
+        var o = {
+            "M+": this.getMonth() + 1, //月份 
+            "d+": this.getDate(), //日 
+            "h+": this.getHours(), //小时 
+            "m+": this.getMinutes(), //分 
+            "s+": this.getSeconds(), //秒 
+            "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+            "S": this.getMilliseconds() //毫秒 
+        };
+        if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        return fmt;
+    }
+
+let initProblemCount = function(problemCount, ojOrder){
+    $('#last-message').empty();
+    let item = ['days'].concat(ojOrder).concat('Sum');
+    let newRow = '<tr>';
+    item.forEach(function(it){
+        newRow += ('<th>' + it + '</th>');
+    });
+    newRow += '</tr>';
+    $('#last-message').append(newRow);
+    problemCount.forEach(function(data, index){
+        newRow = '<tr>';
+        item.forEach(function(it, dx){
+            if(dx === 0){
+                newRow += '<td>' + data['days'] +'天内</td>';
+            }else{
+                newRow += '<td>' + (data[it] || 0) + '</td>';
+            }
+        });
+        newRow += '</tr>';
+        $('#last-message').append(newRow);
+    });
+}
+
+let initCalHeatMap = function(calHeatMap){
+    let now = new Date();
+    let year, month;
+    let cur_year = now.getFullYear();
+    let cur_month = now.getMonth() + 1;
+    let last_day = (new Date(cur_year, cur_month, 0)).getDate();
+    if(cur_month == 12){
+        month = 1;
+        year = cur_year;
+    }else{
+        year = cur_year - 1;
+        month = cur_month + 1;
+    }
+    let time0 = year +'-'+ month +'-01';
+    let time1 = cur_year +'-'+ cur_month +'-'+ last_day;
+
+    $('#cal-heatmap').empty();
+    let dom = document.getElementById("cal-heatmap");
+    let myChart = ECHARTS.init(dom);
+    let option = {
+        tooltip: {
+            position: 'top'
+        },
+        visualMap: {
+            calculable: true,
+            type: 'piecewise',
+            orient: 'horizontal',
+            left: 'center',
+            top: 'top',
+            pieces: [
+                {max: 2},
+                {min: 2, max: 3},
+                {min: 3, max: 6},
+                {min: 6, max: 10},
+                {min: 10, max: 30},
+                {min: 30},
+            ]
+        },
+        calendar: [{
+            left: 'center',
+            range: [time0, time1],
+            cellSize: ['auto', 16],
+            yearLabel: {show: false},
+            splitLine: {
+                show: true,
+                lineStyle: {
+                    color: '#fff',
+                    width: 10,
+                    type: 'solid',
+                }
+            },
+            itemStyle: {
+                normal: {
+                    color: "#ededed",
+                    borderColor: "#fff"
+                }
+            }
+        }],
+
+        series: [{
+            type: 'heatmap',
+            coordinateSystem: 'calendar',
+            calendarIndex: 0,
+            data: calHeatMap
+        }]
+
+    };
+    myChart.setOption(option);
+    window.addEventListener('resize', function () {
+        myChart.resize();
+    });
+}
+
+// let initCalHeatMap = function(calHeatMap){
+//     $('#cal-heatmap').empty();
+//     let cal = new CalHeatMap();
+//     cal.init({
+//         data: calHeatMap,
+//         domain: "month",
+//         subDomain: "day",
+//         itemSelector: "#cal-heatmap",
+//         start: function(){
+//             let tdate = new Date();
+//             if(tdate.getMonth() == 11){
+//                 tdate.setMonth(0);
+//             } else {
+//                 tdate.setYear(tdate.getFullYear() - 1);
+//                 tdate.setMonth(tdate.getMonth() + 1);
+//             }
+//             return tdate;
+//         }(),
+//         legend: [1,2,5,10]
+//     });
+// }
+
+let initProblemCountLine = function(){
+}
+
+let initOJProportion = function(problemAcList, problemRating, ojOrder, rating){
+    data_right_out = {};
+    series_data_in = [];
+    series_data_out = [];
+    legend_data_left = [];
+    legend_data_right = [];
+    ojOrder.forEach(function(oj, index){
+        if(problemAcList[oj] == undefined){
+            return true;
+        }
+        data_right_out[oj] = new Array(rating.length);
+        legend_data_left.push(oj);
+        series_data_in.push({'value': Object.keys(problemAcList[oj]).length, 'name': oj});
+        for(let label in problemAcList[oj]){
+            try{
+                pro_rating = (problemRating[oj][label] || 1500);
+            }catch(e){
+                // console.error('oj = ' + oj + ', label = ' + label + ', e = ' + e);
+                pro_rating = 1500;
+            }
+            cur_rating = 0;
+            while(pro_rating > rating[cur_rating]){ cur_rating += 1;}
+            data_right_out[oj][cur_rating] = (data_right_out[oj][cur_rating] || 0) + 1;
+        }
+    });
+    ojOrder.forEach(function(oj, index){
+        if(data_right_out[oj] == undefined){
+            return true;
+        }
+        data_right_out[oj].forEach(function(cnt, dx){
+            if(cnt){
+                legend_name = oj + ' [' + rating[dx-1] + ', ' + rating[dx] + ')';
+                series_data_out.push({'value': cnt, 'name': legend_name});
+                legend_data_right.push(legend_name);
+            }
+        });
+    });
+
+    $('#oj-proportion').empty();
+    let dom = document.getElementById("oj-proportion");
+    let myChart = ECHARTS.init(dom);
+    let option = {
+        tooltip : {
+            trigger: 'item',
+            formatter: "{a} <br/>{b} : {c} ({d}%)"
+        },
+        legend: [
+            {
+                orient: 'vertical',
+                left: 'left',
+                data: legend_data_left,
+            },
+            {
+                orient: 'vertical',
+                right: 'right',
+                data: legend_data_right,
+            }
+        ],
+        series : [
+            {
+                type: 'pie',
+                name: 'OJ题数占比',
+                selectedMode: 'single',
+                radius: [0, '36%'],
+                label: {
+                    normal: {
+                        position: 'inner'
+                    }
+                },
+                labelLine: {
+                    normal: {
+                        show: false
+                    }
+                },
+                data: series_data_in,
+                itemStyle: {
+                    emphasis: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            },
+            {
+                type:'pie',
+                name:'OJ难度占比',
+                radius: ['46%', '66%'],
+                data: series_data_out
+            }
+        ]
+    };
+    myChart.setOption(option);
+    window.addEventListener('resize', function () {
+        myChart.resize();
+    });
+}
+
+let initUserCompareCharts = function(){
+    $("#problem-count-line").empty();
+    let problem_count_dom = document.getElementById("problem-count-line");
+    let problem_count_chart = ECHARTS.init(problem_count_dom);
+    let problem_count_option = {
+        tooltip : {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        toolbox: {
+            show : true,
+            feature : {
+                mark : {show: true},
+                dataView : {show: true, readOnly: true},
+                magicType: {show: true, type: ['line']},
+                restore : {show: true},
+                saveAsImage : {show: true}
+            }
+        },
+        calculable : true,
+        legend: {},
+        grid: {
+            top: '12%',
+            left: '1%',
+            right: '1%',
+            containLabel: true
+        },
+        xAxis: [
+            {
+                name: '时间',
+                type : 'time',
+                gridIndex: 0,
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        yAxis: [
+            {
+                name : '题数',
+                type : 'value',
+                position: 'left',
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        series : []
+    };
+    problem_count_chart.setOption(problem_count_option);
+    window.addEventListener('resize', function () {
+        problem_count_chart.resize();
+    });
+
+    $("#users-rating-line").empty();
+    let users_rating_dom = document.getElementById("users-rating-line");
+    let users_rating_chart = ECHARTS.init(users_rating_dom);
+    let users_rating_option = {
+        tooltip : {
+            show: true,
+            trigger: 'axis',
+        },
+        toolbox: {
+            show : true,
+            feature : {
+                mark : {show: true},
+                dataView : {show: true, readOnly: true},
+                magicType: {show: true, type: ['line']},
+                restore : {show: true},
+                saveAsImage : {show: true}
+            }
+        },
+        calculable : true,
+        legend: {},
+        grid: {
+            top: '12%',
+            left: '1%',
+            right: '1%',
+            containLabel: true
+        },
+        xAxis: [
+            {
+                name: '时间',
+                type : 'time',
+                gridIndex: 0,
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        yAxis: [
+            {
+                scale: true,
+                name : 'rating',
+                type : 'value',
+                position: 'left',
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        series : []
+    };
+    users_rating_chart.setOption(users_rating_option);
+    window.addEventListener('resize', function () {
+        users_rating_chart.resize();
+    });
+
+    $("#users-ability-line").empty();
+    let indicator = [];
+    CLASSIFY.forEach(function(data, index){
+        indicator.push({'name': data['main_class']});
+    });
+    let users_ability_dom = document.getElementById("users-ability-line");
+    let users_ability_chart = ECHARTS.init(users_ability_dom);
+    let users_ability_option = {
+        tooltip: {},
+        legend: {},
+        radar: {
+            scale: true,
+            indicator: indicator,
+        },
+        series: [{type: 'radar'}]
+    };
+    users_ability_chart.setOption(users_ability_option);
+    window.addEventListener('resize', function () {
+        users_ability_chart.resize();
+    });
+}
+
+let showUserInfo = function(username, tableData){
+    let oTable = $('#problem-count-table').DataTable();
+    tableData.forEach(function(data, index){
+        if(data['username'] == username){
+            oTable.clear().draw();
+            oTable.rows.add([data]);
+            oTable.columns.adjust().draw();
+            return false;
+        }
+    });
+
+    let cal_heat_map = {};
+
+    let PROBLEMCOUNT = new Array(CONFIG.days.length);
+    CONFIG.days.forEach(function(data, index){
+        PROBLEMCOUNT[index] = {'days': data};
+    });
+    let now = new Date();
+    for(let repo in (USERACINFO[username]|| {})){
+        for(let label in (USERACINFO[username][repo]||{})){
+            // PROBLEMCOUNT
+            let cur_day = 0;
+            let actime = new Date(USERACINFO[username][repo][label]);
+            while(now - actime > CONFIG.days[cur_day] * 86400000){
+                cur_day += 1;
+            }
+            while(cur_day < CONFIG.days.length){
+                cur_day_data = (PROBLEMCOUNT[cur_day] || {});
+                cur_day_data['Sum'] = (cur_day_data['Sum'] || 0) + 1;
+                cur_day_data[repo] = (cur_day_data[repo] || 0) + 1;
+                PROBLEMCOUNT[cur_day] = cur_day_data;
+                cur_day += 1;
+            }
+
+            // CALHEATMAP
+            let tmpTime = (parseInt(actime.getTime() / 86400000)) * 86400000;
+            cal_heat_map[tmpTime] = (cal_heat_map[tmpTime] || 0) + 1;
+        }
+    }
+
+    let calHeatMap = [];
+    let time_list = Object.keys(cal_heat_map);
+    time_list.sort(function(a, b){
+        return a - b;
+    });
+    time_list.forEach(function(data, index){
+        calHeatMap.push([(new Date(parseInt(data))).Format("yyyy-MM-dd"), cal_heat_map[data]]);
+    });
+
+    $('#user-info').removeAttr('hidden');
+    initCalHeatMap(calHeatMap);
+    initProblemCount(PROBLEMCOUNT, REPO);
+    initOJProportion(USERACINFO[username], PROBLEMRATING, REPO, CONFIG.rating);
+}
+
+let initSquadsUsersInfo = function(problem_data, users_info){
+    item = [
+        {'title': '用户名', 'filed': 'username'},
+        {'title': '姓名', 'filed': 'name'},
+        {'title': '昵称', 'filed': 'nickname'},
+    ];
+    let newRow = '<tr>';
+    item.forEach(function(it){
+        newRow += ('<th>' + it['title'] + '</th>');
+    });
+    newRow += '</tr>';
+    $('#squads_users_thead').append(newRow);
+    problem_data.forEach(function(data, index){
+        let username = data['username'];
+        newRow = '<tr>';
+        item.forEach(function(it, dx){
+            if(dx === 0){
+                newRow += '<td>' + username +'</td>';
+            }else{
+                newRow += '<td>' + (users_info[username][it['filed']]) + '</td>';
+            }
+        });
+        newRow += '</tr>';
+        $('#squads_users_table').append(newRow);
+    });
+
+    $('#squads_users_tbody tr').click(function(){
+        let username = $(this).children('td:first').text();
+        showUserInfo(username, problem_data);
+    });
+    $('#squads_users_tbody tr').hover(function(){
+        $(this).css('cursor', 'pointer');
+    });
+}
+
+let initProblemCountTable = function(columns, data, aoColumnDefs){
+    $('#problem-count-table').DataTable({
+        "data": data,
+        "info": false,
+        "paging": false,
+        "autoWidth": true,
+        "processing": true,
+        "searching": false,
+        "bAutoWidth": true,
+        "columns": columns,
+        "aoColumnDefs": aoColumnDefs,
+        "order": [[ columns.length - 1, "desc" ]],
+    });
+}
+
+let initSelectedUserList = function(data){
+    let row = "";
+    data.forEach(function(data, index){
+        row = "<input id='item" +index+ "' name='user_select' type='checkbox' value='"
+                + data['username'] +"'>";
+        $("#selected-div").append(row);
+        row = "<label for='item" +index+ "'>" + data['username'] +' ('+ data['Sum']+')'+ "</label>";
+        $("#selected-div").append(row);
+    });
+    row = "<p class='done' aria-hidden='true'>已选</p>";
+    $("#selected-div").append(row);
+    row = "<p class='undone' aria-hidden='true'>未选</p>";
+    $("#selected-div").append(row);
+    $("input[name='user_select']").click(function(){
+        initUserCompare();
+    });
+}
+
+let initUserCompareData = function(selectedUsers, problemAcList, userRating, userAbility){
+    let problem_count_series = [];
+    selectedUsers.forEach(function(user, index){
+        let series = {};
+        series['name'] = user;
+        series['type'] = 'line';
+        series['smooth'] = true;
+        series['data'] = problemAcList[user];
+        series['areaStyle'] = {'normal': {}};
+        series['itemStyle'] = { 'normal': {'opacity': 0}};
+        problem_count_series.push(series);
+    });
+    let problem_count_dom = document.getElementById("problem-count-line");
+    let problem_count_chart = ECHARTS.getInstanceByDom(problem_count_dom);
+    let problem_count_option = problem_count_chart.getOption();
+    problem_count_option.legend = {data: selectedUsers};
+    problem_count_option.series = problem_count_series;
+    problem_count_chart.setOption(problem_count_option, true);
+
+    let users_rating_legend = [];
+    let users_rating_series = [];
+    for(let repo in userRating){
+        users_rating_legend.push(repo);
+        selectedUsers.forEach(function(user, index){
+            let series = {};
+            series['name'] = repo;
+            series['type'] = 'line';
+            series['smooth'] = true;
+            series['data'] = [];
+            USERRATING[repo][user].forEach(function(data, index){
+                series['data'].push([data['date'], data['rating'], user]);
+            });
+            series['itemStyle'] = { 'normal': {'opacity': 0}};
+            users_rating_series.push(series);
+        });
+    }
+    let users_rating_dom = document.getElementById("users-rating-line");
+    let users_rating_chart = ECHARTS.getInstanceByDom(users_rating_dom);
+    let users_rating_option = users_rating_chart.getOption();
+    users_rating_option.legend = {data: users_rating_legend};
+    users_rating_option.series = users_rating_series;
+    users_rating_chart.setOption(users_rating_option, true);
+
+    let users_ability_series = [{
+        data: [],
+        type: 'radar',
+        tooltip: {
+            trigger: 'item'
+        },
+        itemStyle: {normal: {areaStyle: {type: 'default'}}},
+    }];
+    selectedUsers.forEach(function(user, index){
+        let data = {};
+        data['name'] = user;
+        data['type'] = 'radar';
+        data['value'] = USERABILITY[user]['overall'];
+        data['label'] = {
+            normal: {
+                show: true,
+                formatter: function(params){
+                    return parseInt(params.value);
+                }
+            }
+        };
+        users_ability_series[0]['data'].push(data);
+    });
+    let users_ability_dom = document.getElementById("users-ability-line");
+    let users_ability_chart = ECHARTS.getInstanceByDom(users_ability_dom);
+    let users_ability_option = users_ability_chart.getOption();
+    users_ability_option.legend = {data: selectedUsers};
+    users_ability_option.series = users_ability_series;
+    users_ability_chart.setOption(users_ability_option, true);
+}
+
+let initUserCompare = function(){
+    let userAbility = [];
+    let problemAcList = {};
+    let selected_users = [];
+    let items = document.getElementsByName("user_select");
+    items.forEach(function(data, index){
+        if(!data.checked) return true;
+        let time_point = [];
+        selected_users.push(data.value);
+        problemAcList[data.value] = USERACCOUNT[data.value];
+    });
+    initUserCompareData(selected_users, problemAcList, USERRATING, null);
+}
+
+let getDataFromServer = function(url){
+    return new Promise(function (resolve, reject){
+        $.ajax({
+            url: url,
+            dataType: "json",
+            type: "GET",
+            cache: false,
+            processData: false,
+            contentType: false,
+            success: function(response_data){
+                resolve(response_data);
+            },
+            error: function(){
+                reject(new Error('error'));
+            }
+        });
+    });
+}
+
+require(['domready!', 'datatable', 'calheatmap', 'echarts'], function(doc, DataTable, CalHeatMap, echarts){
+    ECHARTS = echarts;
+    let initUsersAbilityData = function(){
+        // {
+        //     user1: {
+        //         'total': {
+        //             'mainclass1': {
+        //                 'sum': xxx,
+        //                 'count': xxx
+        //             },
+        //             ...
+        //         },
+        //         'mainclass1': {
+        //             'subclass1': {
+        //                 'sum': xxx,
+        //                 'count': xxx
+        //             },
+        //             ...
+        //         },
+        //         ...
+        //     },
+        //     ...
+        // }
+        let overall_info = {};
+
+        for(let user in USERACINFO){
+            overall_info[user] = {};
+            for(let repo in USERACINFO[user]){
+                for(let label in USERACINFO[user][repo]){
+                    let subClass, rating;
+                    try{
+                        rating = (PROBLEMRATING[repo][label] || 1500);
+                    }catch(e){
+                        rating = 1500;
+                    }
+                    try{
+                        subClass = PROBLEMCLASSIFY[repo][label];
+                        if(subClass[0] == undefined){
+                            throw('空类型');
+                        }
+                    }catch(e){
+                        subClass = ['其他'];
+                    }
+                    subClass.forEach(function(cla, index){
+                        // 主类数据
+                        let mainClass = CLASSIFYDICT[cla] || '其他';
+                        let total = (overall_info[user]['total'] || {});
+                        let overall_pcr = (total[mainClass] || {'sum': 0, 'count': 0});
+                        overall_pcr['sum'] += rating;
+                        overall_pcr['count'] += 1;
+                        total[mainClass] = overall_pcr;
+                        overall_info[user]['total'] = total;
+
+                        let main_class = (overall_info[user][mainClass] || {});
+                        let sub_class = (main_class[cla] || {'sum': 0, 'count': 0});
+                        sub_class['sum'] += rating;
+                        sub_class['count'] += 1;
+                        main_class[cla] = sub_class;
+                        overall_info[user][mainClass] = main_class;
+                    });
+                }
+            }
+        }
+        for(let user in overall_info){
+            let mainClass, subClass;
+            USERABILITY[user] = {};
+            USERABILITY[user]['overall'] = [];
+            CLASSIFY.forEach(function(data, index){
+                try{
+                    mainClass = overall_info[user]['total'][data['main_class']];
+                    if(mainClass === undefined){
+                        throw('空类型');
+                    }
+                }catch(e){
+                    mainClass = {'sum': 0, 'count': 1};
+                }
+                USERABILITY[user]['overall'].push(mainClass['sum'] / mainClass['count']);
+                USERABILITY[user][data['main_class']] = [];
+                data['sub_class'].forEach(function(cla, index){
+                    try{
+                        subClass = overall_info[user][data['main_class']][cla];
+                        if(subClass === undefined){
+                            throw('空类型');
+                        }
+                    }catch(e){
+                        subClass = {'sum': 0, 'count': 1};
+                    }
+                    USERABILITY[user][data['main_class']].push(subClass['sum'] / subClass['count']);
+                });
+            });
+        }
+    }
+
+    let initProblemCountData = function(userAcInfo){
+        let data = [];
+        let columns = [{'title': '用户名', 'data': 'username'}];
+        let aoColumnDefs = [{
+            "orderable": false,
+            "targets": 0
+        },{
+            "aTargets" :　["_all"],
+            'class': 'center',
+            "defaultContent": 0,
+            "bSortable": true,
+        }];
+        for(let user in userAcInfo){
+            let sum = 0;
+            let user_data = {};
+            user_data['username'] = user;
+            for(let repo in userAcInfo[user]){
+                let len = (Object.keys(userAcInfo[user][repo])).length;
+                user_data[repo] = len;
+                sum += len;
+            }
+            user_data['Sum'] = sum;
+            data.push(user_data);
+        }
+        REPO.forEach(function(repo, index){
+            columns.push({'title': repo, 'data': repo});
+        });
+        columns.push({'title': '总题数', 'data': 'Sum'});
+        data.sort(function(a, b){
+            return b['Sum'] - a['Sum'];
+        });
+        initSquadsUsersInfo(data, USERSINFO);
+        initProblemCountTable(columns, data, aoColumnDefs);
+        initSelectedUserList(data);
+    }
+
+    let processUserACListDATA = function(response_data){
+        USERACLIST = response_data;
+        let ac_count = {};
+        response_data.forEach(function(data, index){
+            ac_count[data['user__username']] = (ac_count[data['user__username']] || 0) + 1;
+            let user_info = USERACINFO[data['user__username']] || {};
+            let repo_info = user_info[data['repo']] || {};
+            let user_count = USERACCOUNT[data['user__username']] || [];
+            repo_info[data['label']] = data['actime'];
+            user_info[data['repo']] = repo_info;
+            user_count.push([data['actime'], ac_count[data['user__username']]]);
+            USERACINFO[data['user__username']] = user_info;
+            USERACCOUNT[data['user__username']] = user_count;
+            if(REPO.indexOf(data['repo']) == -1){
+                REPO.push(data['repo']);
+            }
+        });
+    }
+
+    let processUsersInfoData = function(response_data){
+        response_data.forEach(function(data, index){
+            USERSINFO[data['user']] = {
+                'name': data['name'],
+                'nickname': data['nickname']
+            };
+        });
+    }
+
+    let processProblemRatingData = function(response_data){
+        PROBLEMRATING = response_data;
+    }
+
+    let processUserRatingData = function(response_data){
+        USERRATING = response_data;
+    }
+
+    let processProblemClassifyData = function(response_data){
+        CLASSIFYDICT = response_data['all_classify'];
+        PROBLEMCLASSIFY = response_data['problem_classify'];
+
+        for(let subClass in CLASSIFYDICT){
+            let flag = false;
+            let mainClass = CLASSIFYDICT[subClass];
+            for(let i = 0; i < CLASSIFY.length; i++){
+                if(CLASSIFY[i]['main_class'] == mainClass){
+                    CLASSIFY[i]['sub_class'].push(subClass);
+                    flag = true;
+                    break;
+                }
+            }
+            if(!flag){
+                CLASSIFY.push({'main_class': mainClass, 'sub_class': [subClass]});
+            }
+        }
+    }
+
+    let processUserRating = function(){
+        return new Promise(function(resolve, reject){
+            let url = "{% url 'squads_users_rating' squads_id=squads.id %}";
+            getDataFromServer(url).then(function(response_data){
+                processUserRatingData(response_data);
+                resolve();
+            });
+        });
+    }
+
+    let processProblemClassify = function(){
+        return new Promise(function(resolve, reject){
+            let url = "{% url 'mate_problemclassify' %}";
+            getDataFromServer(url).then(function(response_data){
+                processProblemClassifyData(response_data);
+                resolve();
+            });
+        });
+    }
+
+    let processUsersACList = function(){
+        return new Promise(function(resolve, reject){
+            let url = "{% url 'squads_users_aclist' squads_id=squads.id %}";
+            getDataFromServer(url).then(function(response_data){
+                processUserACListDATA(response_data);
+                resolve();
+            });
+        });
+    }
+
+    let processUsersInfo = function(){
+        return new Promise(function(resolve, reject){
+            let url = "{% url 'squads_users_info' squads_id=squads.id %}";
+            getDataFromServer(url).then(function(response_data){
+                processUsersInfoData(response_data);
+                resolve();
+            });
+        });
+    }
+
+    let processProblemRating = function(){
+        return new Promise(function(resolve, reject){
+            let url = "{% url 'mate_problemrating' %}";
+            getDataFromServer(url).then(function(response_data){
+                processProblemRatingData(response_data);
+                resolve();
+            });
+        });
+    }
+
+    let processProblemMaterial = function(){
+        return new Promise(function(resolve, reject){
+            Promise.all([processProblemRating(), processProblemClassify()]).then(function(){
+                initUsersAbilityData();
+                resolve();
+            });
+        });
+    }
+
+    Promise.all([processUsersACList(), processUsersInfo()]).then(function(){
+        initProblemCountData(USERACINFO);
+        Promise.all([processProblemMaterial(), processUserRating()]).then(function(){
+            initUserCompareCharts();
+        });
+    });
+});
+
+</script>
+{% endblock %}
