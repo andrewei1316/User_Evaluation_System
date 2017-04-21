@@ -167,7 +167,7 @@
             sum += oj_sum;
         }
         oj_sum_list.sort(function(a, b){
-            return a[1] < b[1];
+            return b[1] - a[1];
         });
 
         let newRow = '<li class="list-group-item">';
@@ -379,28 +379,7 @@
         });
     }
 
-    let initEveryDayCountRating = function(everyDayInfo, problemRating, echarts){
-        let problemCountData = [];
-        let problemRatingData = [];
-        let time_list = Object.keys(everyDayInfo);
-        time_list.sort();
-        time_list.forEach(function(t, index){
-            let proCount = 0;
-            let proRating = 0;
-            for(let oj in everyDayInfo[t]){
-                proCount += everyDayInfo[t][oj].length;
-                everyDayInfo[t][oj].forEach(function(label, index){
-                    try{
-                        proRating += (problemRating[oj][label] || 1500);
-                    }catch(e){
-                        proRating += 1500;
-                    }
-                });
-            }
-            problemCountData.push([parseInt(t), proCount]);
-            problemRatingData.push([parseInt(t), proRating / proCount]);
-        });
-
+    let initEveryDayCountRating = function(everyDayCount, everyDayAvgRating, echarts){
         let dom = document.getElementById("each-day-rating");
         let myChart = echarts.init(dom);
         let option = {
@@ -466,7 +445,7 @@
                 {
                     name: '题数',
                     type: 'bar',
-                    data: problemCountData,
+                    data: everyDayCount,
                     yAxisIndex: 0,
                     barGap: "60%",
                     barWidth: "20%",
@@ -475,7 +454,7 @@
                 {
                     name: 'rating',
                     type: 'line',
-                    data: problemRatingData,
+                    data: everyDayAvgRating,
                     smooth: true,
                     yAxisIndex: 1,
                     connectNulls: true,
@@ -493,22 +472,46 @@
         });
     }
 
-    let initProblemCountUserRating = function(problemAcList, userRating, echarts){
+    let initProblemCountUserRating = function(everyDayCount, userRating, echarts){
         let problemSum = 0;
-        let userRatingData = [];
+        let chartLegend = [];
+        let chartSeries = [];
         let problemCountData = [];
-        userRatingKeys = Object.keys(userRating);
-        userRatingKeys.sort();
-        userRatingKeys.forEach(function(t){
-            userRatingData.push([parseInt(t), userRating[t].rating / userRating[t].count]);
+        everyDayCount.forEach(function(data, index){
+            problemSum += data[1];
+            problemCountData.push([data[0], problemSum]);
         });
-        problemAcList.sort(function(a, b){
-            return a.actime - b.actime;
+
+        chartLegend.push('count');
+        chartSeries.push({
+            type: 'line',
+            name: 'count',
+            data: problemCountData,
+            yAxisIndex: 0,
+            itemStyle: {
+                normal: {
+                    opacity: 0
+                }
+            },
+            areaStyle: {normal: {}},
         });
-        problemAcList.forEach(function(ac, index){
-            problemSum += 1;
-            problemCountData.push([ac.actime, problemSum]);
-        });
+        for(let repo in userRating){
+            chartLegend.push('rating('+ repo +')');
+            chartSeries.push({
+                type: 'line',
+                name: 'rating('+ repo +')',
+                data: userRating[repo],
+                smooth: true,
+                yAxisIndex: 1,
+                connectNulls: true,
+                itemStyle: {
+                    normal: {
+                        opacity: 0
+                    }
+                },
+                areaStyle: {normal: {}},
+            });
+        }
 
         let dom = document.getElementById("problem-count-rating");
         let myChart = echarts.init(dom);
@@ -527,10 +530,8 @@
                     saveAsImage : {show: true}
                 }
             },
-            calculable : true,
             legend: {
-                data:['count', 'rating'],
-                itemGap: 5
+                data: chartLegend,
             },
             grid: {
                 top: '12%',
@@ -542,7 +543,6 @@
                 {
                     name: '时间',
                     type : 'time',
-                    gridIndex: 0,
                     boundaryGap: [0, '30%'],
                 },
             ],
@@ -573,34 +573,7 @@
                     }
                 },
             ],
-            series : [
-                {
-                    type: 'line',
-                    name: 'count',
-                    data: problemCountData,
-                    yAxisIndex: 0,
-                    itemStyle: {
-                        normal: {
-                            opacity: 0
-                        }
-                    },
-                    areaStyle: {normal: {}},
-                },
-                {
-                    type: 'line',
-                    name: 'rating',
-                    data: userRatingData,
-                    smooth: true,
-                    yAxisIndex: 1,
-                    connectNulls: true,
-                    itemStyle: {
-                        normal: {
-                            opacity: 0
-                        }
-                    },
-                    areaStyle: {normal: {}},
-                }
-            ]
+            series : chartSeries
         };
         myChart.setOption(option);
         window.addEventListener('resize', function () {
@@ -918,6 +891,19 @@ require(['domready!', 'echarts'], function(doc, echarts){
     //     }
     // }
     let EVERYDAYINFO = {};
+
+    // [
+    //     [time1, count, rating],
+    //     [time2, count, rating],
+    //     ...
+    // ]
+    let EVERYDAYCOUNT = [];
+
+    // [
+    //     [time1, rating, count],
+    //     [time2, rating, count]
+    // ]
+    let EVERYDAYAVGRATING = [];
     let PROBLEMRATING = {};
 
     // {
@@ -973,7 +959,6 @@ require(['domready!', 'echarts'], function(doc, echarts){
     let processACListData = function(response_data){
         // response_data = [{'label':1000, 'repo': 'Pku', 'actime': xx}, ]
         let now = new Date();
-        let calHeatMap = {};
         PROBLEMACLIST = response_data;
         PROBLEMACLIST.forEach(function(data, index){
             data.actime = new Date(data.actime);
@@ -1004,17 +989,34 @@ require(['domready!', 'echarts'], function(doc, echarts){
             dayInfo[data.repo] = (dayInfo[data.repo] || []);
             dayInfo[data.repo].push(data.label);
             EVERYDAYINFO[tmpTime] = dayInfo;
-
-            // CALHEATMAP
-            calHeatMap[tmpTime] = (calHeatMap[tmpTime] || 0) + 1;
         });
+
         OJORDER = initProblemSum(PROBLEMACDICT);
-        let time_list = Object.keys(calHeatMap);
+
+    }
+
+    let processEveryDayInfo = function(){
+        let time_list = Object.keys(EVERYDAYINFO);
         time_list.sort(function(a, b){
             return a - b;
         });
-        time_list.forEach(function(data, index){
-            CALHEATMAP.push([(new Date(parseInt(data))).Format("yyyy-MM-dd"), calHeatMap[data]]);
+        time_list.forEach(function(time, index){
+            let date = (new Date(parseInt(time))).Format("yyyy-MM-dd");
+            let proCount = 0;
+            let proRating = 0;
+            for(let repo in EVERYDAYINFO[time]){
+                proCount += EVERYDAYINFO[time][repo].length;
+                EVERYDAYINFO[time][repo].forEach(function(label, index){
+                    try{
+                        proRating += (PROBLEMRATING[repo][label] || 1500);
+                    }catch(e){
+                        proRating += 1500;
+                    }
+
+                });
+            }
+            EVERYDAYCOUNT.push([date, proCount]);
+            EVERYDAYAVGRATING.push([date, proRating / proCount]);
         });
     }
 
@@ -1024,12 +1026,16 @@ require(['domready!', 'echarts'], function(doc, echarts){
 
     let processUserRatingData = function(response_data){
         for(let repo in response_data){
-            response_data[repo].forEach(function(record, index){
-                let date = new Date(record.date).getTime();
-                time_data = (USERRATING[date] || {});
-                time_data['count'] = (time_data['count'] || 0) + 1;
-                time_data['rating'] = (time_data['rating'] || 0) + record.rating;
-                USERRATING[date] = time_data;
+            USERRATING[repo] = [];
+            response_data[repo].forEach(function(data, index){
+                let len = USERRATING[repo].length;
+                let time = parseInt((new Date(data['date'])).getTime() / 86400000) * 86400000;
+                let rating = data['rating'];
+                if(len != 0 && USERRATING[repo][len - 1][0] == time){
+                    USERRATING[repo][len - 1][1] = rating;
+                }else{
+                    USERRATING[repo].push([time, rating]);
+                }
             });
         }
     }
@@ -1079,18 +1085,18 @@ require(['domready!', 'echarts'], function(doc, echarts){
         });
     }
 
-    processACList().then(function(){
-        Promise.all([processProblemRating(), processProblemClassify()]).then(function(){
+    Promise.all([processACList(), processProblemRating()]).then(function(){
+        Promise.all([processEveryDayInfo(), processProblemClassify()]).then(function(){
             initOJProportion(PROBLEMACDICT, PROBLEMRATING, OJORDER, CONFIG.rating, echarts);
-            initEveryDayCountRating(EVERYDAYINFO, PROBLEMRATING, echarts);
+            initEveryDayCountRating(EVERYDAYCOUNT, EVERYDAYAVGRATING, echarts);
             initAbilityDistribution(PROBLEMACDICT, PROBLEMCLASSIFY, PROBLEMRATING, CLASSIFY, echarts);
         });
         processUserRating().then(function(){
-            initProblemCountUserRating(PROBLEMACLIST, USERRATING, echarts);
+            initProblemCountUserRating(EVERYDAYCOUNT, USERRATING, echarts);
         });
 
         initProblemCount(PROBLEMCOUNT, OJORDER);
-        initCalHeatMap(CALHEATMAP, echarts);
+        initCalHeatMap(EVERYDAYCOUNT, echarts);
     });
 });
 </script>

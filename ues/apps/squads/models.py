@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
+from django.core.cache import cache
 from core.basemodel import BaseModel
 from core.rating.userrating import get_user_rating_by_repo
 from users.models import User, AccountBind, AC_Achievement
@@ -39,28 +40,32 @@ class Squads(BaseModel):
         return list(users_info)
 
     def get_squads_users_rating_json(self, repo):
-        result = {}
-        if repo is None:
-            repo = ['Pku', 'Hdu']
-        usernames = SquadsUser.get_users_by_squads(self)
-        users_name = list(usernames)
-        if isinstance(repo, list) or isinstance(repo, set):
-            for r in repo:
+        cache_str = 'squads_users_rating_json'
+        result = cache.get(cache_str)
+        if result is None:
+            result = {}
+            if repo is None:
+                repo = ['Pku', 'Hdu']
+            usernames = SquadsUser.get_users_by_squads(self)
+            users_name = list(usernames)
+            if isinstance(repo, list) or isinstance(repo, set):
+                for r in repo:
+                    for user in users_name:
+                        username = AccountBind.get_oj_handle_by_user_oj(user, r)
+                        rating, ac_rating_arr, rating_arr = get_user_rating_by_repo(
+                            user=user, repo=r)
+                        if r not in result:
+                            result[r] = {}
+                        result[r][user] = rating_arr
+            else:
                 for user in users_name:
                     username = AccountBind.get_oj_handle_by_user_oj(user, r)
                     rating, ac_rating_arr, rating_arr = get_user_rating_by_repo(
                         user=user, repo=r)
-                    if r not in result:
-                        result[r] = {}
-                    result[r][user] = rating_arr
-        else:
-            for user in users_name:
-                username = AccountBind.get_oj_handle_by_user_oj(user, r)
-                rating, ac_rating_arr, rating_arr = get_user_rating_by_repo(
-                    user=user, repo=r)
-                if repo not in result:
-                    result[repo] = {}
-                result[repo][user] = rating_arr
+                    if repo not in result:
+                        result[repo] = {}
+                    result[repo][user] = rating_arr
+            cache.set(cache_str, result, None)
         return result
 
 class SquadsUser(BaseModel):

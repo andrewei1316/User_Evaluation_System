@@ -61,7 +61,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_user_rating_json_by_repo(self, repo=None):
         if repo is None:
-            repo = ['Hdu']
+            repo = ['Hdu', 'Pku']
         result = {}
         if isinstance(repo, list) or isinstance(repo, set):
             for r in repo:

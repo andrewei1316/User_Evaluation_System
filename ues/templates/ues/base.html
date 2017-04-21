@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/skin-blue.min.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'css/AdminLTE.min.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'css/font-awesome.min.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/ionicons.min.css' %}">
+    <!-- <link rel="stylesheet" type="text/css" href="{% static 'css/ionicons.min.css' %}"> -->
     <link rel="stylesheet" type="text/css" href="{% static 'css/selected_or_un.css' %}">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -23,7 +23,7 @@
     {% block page_css %} {% endblock %}
 </head>
 
-<body class="hold-transition skin-blue sidebar-mini fixed sidebar-collapse">
+<body class="hold-transition skin-blue sidebar-mini sidebar-collapse fixed">
     <div class="wrapper">
         {% block page_head %} {% endblock %}
         {% block page_leftbar %} {% endblock %}
@@ -35,9 +35,9 @@
 <script type="text/javascript" src="{% static 'js/jquery-2.2.3.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/bootstrap.min.js' %}"></script>
 
-<script type="text/javascript" src="{% static 'js/demo.js' %}"></script>
-<script type="text/javascript" src="{% static 'plugins/fastclick/fastclick.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'plugins/slimScroll/jquery.slimscroll.min.js' %}"></script>
+<!-- <script type="text/javascript" src="{% static 'js/demo.js' %}"></script> -->
+<!-- <script type="text/javascript" src="{% static 'plugins/fastclick/fastclick.min.js' %}"></script> -->
+<!-- <script type="text/javascript" src="{% static 'plugins/slimScroll/jquery.slimscroll.min.js' %}"></script> -->
 <script type="text/javascript" src="{% static 'js/app.min.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'js/require/require.js' %}"></script>
@@ -46,14 +46,14 @@
         urlArgs: "bust=" + (new Date()).getTime(),
         baseUrl: '/static/',
         paths: {
-            d3: 'plugins/d3/d3.min',
-            domready: 'js/require/domReady',
             jquery: 'js/jquery-2.2.3.min',
+            domready: 'js/require/domReady',
             echarts: 'plugins/echarts/echarts.min',
+            // scrollfix: 'plugins/scrollfix/scrollfix.min',
+            // autofix: 'plugins/autofix_anything/autofix_anything',
             datatable: 'plugins/datatable/jquery.dataTables.min',
-            calheatmap: 'plugins/cal-heatmap/cal-heatmap',
-            calheatmap_css: 'plugins/cal-heatmap/cal-heatmap',
-            datatable_css: 'plugins/datatable/jquery.dataTables.min'
+            datatable_css: 'plugins/datatable/jquery.dataTables.min',
+            // autofix_css: 'plugins/autofix_anything/autofix_anything',
         },
         map: {
             '*': {
@@ -68,13 +68,17 @@
                     'css!datatable_css'
                 ]
             },
-            calheatmap: {
-                exports: 'CalHeapMap',
-                deps: [
-                    'd3',
-                    'css!calheatmap_css'
-                ]
-            },
+            // scrollfix: {
+            //     exports: 'scrollFix',
+            //     deps: ['jquery']
+            // },
+            // autofix: {
+            //     exports: 'autofix',
+            //     deps: [
+            //         'jquery',
+            //         'css!autofix_css'
+            //     ]
+            // }
         }
     });
 </script>

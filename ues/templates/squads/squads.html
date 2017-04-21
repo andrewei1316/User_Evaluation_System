@@ -17,7 +17,7 @@
     <section class="content">
         <div class="row">
             <div class="col-md-8">
-                <div class="box">
+                <div class="box" id="squads-div">
                     <div class="box-header">
                         <h3 class="box-title">成员题数</h3>
                     </div>
@@ -39,7 +39,7 @@
             </div>
             <div class="col-md-4">
                 <!-- box -->
-                <div class="box box-primary">
+                <div class="box box-primary" id="squads-users">
                     <div class="box-header with-border">
                         <h3 class="box-title">小组成员</h3>
                     </div>
@@ -59,7 +59,7 @@
         <div class="row">
             <div class="col-md-9">
                 <!-- box -->
-                <div class="box">
+                <div class="box" id="compare-div">
                     <div class="box-header with-border">
                         <h3 class="box-title">能力对比</h3>
                     </div>
@@ -67,6 +67,10 @@
                     <div class="box-body">
                         <label>题数增长曲线</label>
                         <div id="problem-count-line" style="height: 545px;"></div>
+                        <label>每日题数增量曲线</label>
+                        <div id="problem-every-day-count-line" style="height: 545px;"></div>
+                        <label>每日题目难度曲线</label>
+                        <div id="problem-every-day-rating-line" style="height: 545px;"></div>
                         <label>用户能力增长曲线</label>
                         <div id="users-rating-line" style="height: 545px;"></div>
                         <label>用户能力分布曲线</label>
@@ -77,7 +81,7 @@
             </div>
             <div class="col-md-3">
                 <!-- box -->
-                <div class="box box-primary">
+                <div class="box box-primary" id="compare-users">
                     <div class="box-header with-border">
                         <h3 class="box-title">选择对比成员</h3>
                     </div>
@@ -154,6 +158,39 @@
     //     ...
     // }
     let USERRATING = {};
+
+    // {
+    //     'user1': {
+    //         'time1': {
+    //             'oj1': [],
+    //             'oj2': [],
+    //         },
+    //         ...
+    //     }
+    //     ...
+    // }
+    let EVERYDAYINFO = {};
+
+    // {
+    //     'user1':[
+    //         [time1, count, rating],
+    //         [time2, count, rating],
+    //         ...
+    //     ],
+    //     ...
+    // }
+    let EVERYDAYCOUNT = {};
+
+    // {
+    //     'user1':[
+    //         [time1, rating, count],
+    //         [time2, rating, count],
+    //         ...
+    //     ],
+    //     ...
+    // }
+    let EVERYDAYAVGRATING = {};
+
     let PROBLEMRATING = {};
 
     // {
@@ -300,31 +337,6 @@ let initCalHeatMap = function(calHeatMap){
     });
 }
 
-// let initCalHeatMap = function(calHeatMap){
-//     $('#cal-heatmap').empty();
-//     let cal = new CalHeatMap();
-//     cal.init({
-//         data: calHeatMap,
-//         domain: "month",
-//         subDomain: "day",
-//         itemSelector: "#cal-heatmap",
-//         start: function(){
-//             let tdate = new Date();
-//             if(tdate.getMonth() == 11){
-//                 tdate.setMonth(0);
-//             } else {
-//                 tdate.setYear(tdate.getFullYear() - 1);
-//                 tdate.setMonth(tdate.getMonth() + 1);
-//             }
-//             return tdate;
-//         }(),
-//         legend: [1,2,5,10]
-//     });
-// }
-
-let initProblemCountLine = function(){
-}
-
 let initOJProportion = function(problemAcList, problemRating, ojOrder, rating){
     data_right_out = {};
     series_data_in = [];
@@ -342,7 +354,6 @@ let initOJProportion = function(problemAcList, problemRating, ojOrder, rating){
             try{
                 pro_rating = (problemRating[oj][label] || 1500);
             }catch(e){
-                // console.error('oj = ' + oj + ', label = ' + label + ', e = ' + e);
                 pro_rating = 1500;
             }
             cur_rating = 0;
@@ -474,6 +485,128 @@ let initUserCompareCharts = function(){
         problem_count_chart.resize();
     });
 
+    $("#problem-every-day-count-line").empty();
+    let problem_every_day_count_dom = document.getElementById("problem-every-day-count-line");
+    let problem_every_day_count_chart = ECHARTS.init(problem_every_day_count_dom);
+    let problem_every_day_count_option = {
+        tooltip : {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        toolbox: {
+            show : true,
+            feature : {
+                mark : {show: true},
+                dataView : {show: true, readOnly: true},
+                magicType: {show: true, type: ['line']},
+                restore : {show: true},
+                saveAsImage : {show: true}
+            }
+        },
+        legend: {},
+        grid: {
+            top: '12%',
+            left: '1%',
+            right: '1%',
+            containLabel: true
+        },
+        xAxis: [
+            {
+                name: '时间',
+                type : 'time',
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        yAxis: [
+            {
+                name : '题数',
+                type : 'value',
+                position: 'left',
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        dataZoom: [{
+            end: 100,
+            start: 90,
+            show: true,
+            type: 'slider',
+            filterModel: 'empty',
+            labelFormatter: function (value) {
+                return ECHARTS.format.formatTime('MM-dd', new Date(value));
+            }
+        }],
+        series : []
+    };
+    problem_every_day_count_chart.setOption(problem_every_day_count_option);
+    window.addEventListener('resize', function () {
+        problem_every_day_count_chart.resize();
+    });
+
+    $("#problem-every-day-rating-line").empty();
+    let problem_every_day_rating_dom = document.getElementById("problem-every-day-rating-line");
+    let problem_every_day_rating_chart = ECHARTS.init(problem_every_day_rating_dom);
+    let problem_every_day_rating_option = {
+        tooltip : {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        toolbox: {
+            show : true,
+            feature : {
+                mark : {show: true},
+                dataView : {show: true, readOnly: true},
+                magicType: {show: true, type: ['line']},
+                restore : {show: true},
+                saveAsImage : {show: true}
+            }
+        },
+        legend: {},
+        grid: {
+            top: '12%',
+            left: '1%',
+            right: '1%',
+            containLabel: true
+        },
+        xAxis: [
+            {
+                name: '时间',
+                type : 'time',
+                gridIndex: 0,
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        yAxis: [
+            {
+                name : '题数',
+                type : 'value',
+                position: 'left',
+                boundaryGap: [0, '30%'],
+            },
+        ],
+        dataZoom: [{
+            end: 100,
+            start: 90,
+            show: true,
+            type: 'slider',
+            filterModel: 'empty',
+            labelFormatter: function (value) {
+                return ECHARTS.format.formatTime('MM-dd', new Date(value));
+            }
+        }],
+        series : []
+    };
+    problem_every_day_rating_chart.setOption(problem_every_day_rating_option);
+    window.addEventListener('resize', function () {
+        problem_every_day_rating_chart.resize();
+    });
+
+    ECHARTS.connect([problem_every_day_count_chart, problem_every_day_rating_chart]);
+
+
     $("#users-rating-line").empty();
     let users_rating_dom = document.getElementById("users-rating-line");
     let users_rating_chart = ECHARTS.init(users_rating_dom);
@@ -481,6 +614,9 @@ let initUserCompareCharts = function(){
         tooltip : {
             show: true,
             trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
         },
         toolbox: {
             show : true,
@@ -557,8 +693,6 @@ let showUserInfo = function(username, tableData){
         }
     });
 
-    let cal_heat_map = {};
-
     let PROBLEMCOUNT = new Array(CONFIG.days.length);
     CONFIG.days.forEach(function(data, index){
         PROBLEMCOUNT[index] = {'days': data};
@@ -579,22 +713,9 @@ let showUserInfo = function(username, tableData){
                 PROBLEMCOUNT[cur_day] = cur_day_data;
                 cur_day += 1;
             }
-
-            // CALHEATMAP
-            let tmpTime = (parseInt(actime.getTime() / 86400000)) * 86400000;
-            cal_heat_map[tmpTime] = (cal_heat_map[tmpTime] || 0) + 1;
         }
     }
-
-    let calHeatMap = [];
-    let time_list = Object.keys(cal_heat_map);
-    time_list.sort(function(a, b){
-        return a - b;
-    });
-    time_list.forEach(function(data, index){
-        calHeatMap.push([(new Date(parseInt(data))).Format("yyyy-MM-dd"), cal_heat_map[data]]);
-    });
-
+    let calHeatMap = EVERYDAYCOUNT[username] || [];
     $('#user-info').removeAttr('hidden');
     initCalHeatMap(calHeatMap);
     initProblemCount(PROBLEMCOUNT, REPO);
@@ -669,14 +790,14 @@ let initSelectedUserList = function(data){
     });
 }
 
-let initUserCompareData = function(selectedUsers, problemAcList, userRating, userAbility){
+let initUserCompareData = function(selectedUsers, UserAcCount, userRating, userAbility){
     let problem_count_series = [];
     selectedUsers.forEach(function(user, index){
         let series = {};
         series['name'] = user;
         series['type'] = 'line';
         series['smooth'] = true;
-        series['data'] = problemAcList[user];
+        series['data'] = UserAcCount[user];
         series['areaStyle'] = {'normal': {}};
         series['itemStyle'] = { 'normal': {'opacity': 0}};
         problem_count_series.push(series);
@@ -688,6 +809,37 @@ let initUserCompareData = function(selectedUsers, problemAcList, userRating, use
     problem_count_option.series = problem_count_series;
     problem_count_chart.setOption(problem_count_option, true);
 
+    let problem_every_day_count_series = [];
+    selectedUsers.forEach(function(user, index){
+        let series = {};
+        series['name'] = user;
+        series['type'] = 'line';
+        series['data'] = EVERYDAYCOUNT[user];
+        problem_every_day_count_series.push(series);
+    });
+
+    let problem_every_day_count_dom = document.getElementById("problem-every-day-count-line");
+    let problem_every_day_count_chart = ECHARTS.getInstanceByDom(problem_every_day_count_dom);
+    let problem_every_day_count_option = problem_every_day_count_chart.getOption();
+    problem_every_day_count_option.legend = {data: selectedUsers};
+    problem_every_day_count_option.series = problem_every_day_count_series;
+    problem_every_day_count_chart.setOption(problem_every_day_count_option, true);
+
+    let problem_every_day_rating_series = [];
+    selectedUsers.forEach(function(user, index){
+        let series = {};
+        series['name'] = user;
+        series['type'] = 'line';
+        series['data'] = EVERYDAYAVGRATING[user];
+        problem_every_day_rating_series.push(series);
+    });
+    let problem_every_day_rating_dom = document.getElementById("problem-every-day-rating-line");
+    let problem_every_day_rating_chart = ECHARTS.getInstanceByDom(problem_every_day_rating_dom);
+    let problem_every_day_rating_option = problem_every_day_rating_chart.getOption();
+    problem_every_day_rating_option.legend = {data: selectedUsers};
+    problem_every_day_rating_option.series = problem_every_day_rating_series;
+    problem_every_day_rating_chart.setOption(problem_every_day_rating_option, true);
+
     let users_rating_legend = [];
     let users_rating_series = [];
     for(let repo in userRating){
@@ -697,11 +849,21 @@ let initUserCompareData = function(selectedUsers, problemAcList, userRating, use
             series['name'] = repo;
             series['type'] = 'line';
             series['smooth'] = true;
-            series['data'] = [];
-            USERRATING[repo][user].forEach(function(data, index){
-                series['data'].push([data['date'], data['rating'], user]);
-            });
+            series['data'] = userRating[repo][user];
             series['itemStyle'] = { 'normal': {'opacity': 0}};
+            // series['markPoint'] = {
+            //     'data': [{
+            //         type: 'max',
+            //         name: USERRATING[repo][user][0][2] || '',
+            //         label:{
+            //             normal:{
+            //                 formatter: function(data){
+            //                     return data['data']['name'];
+            //                 }
+            //             }
+            //         }
+            //     }]
+            // };
             users_rating_series.push(series);
         });
     }
@@ -724,7 +886,7 @@ let initUserCompareData = function(selectedUsers, problemAcList, userRating, use
         let data = {};
         data['name'] = user;
         data['type'] = 'radar';
-        data['value'] = USERABILITY[user]['overall'];
+        data['value'] = userAbility[user]['overall'];
         data['label'] = {
             normal: {
                 show: true,
@@ -744,17 +906,13 @@ let initUserCompareData = function(selectedUsers, problemAcList, userRating, use
 }
 
 let initUserCompare = function(){
-    let userAbility = [];
-    let problemAcList = {};
     let selected_users = [];
     let items = document.getElementsByName("user_select");
     items.forEach(function(data, index){
         if(!data.checked) return true;
-        let time_point = [];
         selected_users.push(data.value);
-        problemAcList[data.value] = USERACCOUNT[data.value];
     });
-    initUserCompareData(selected_users, problemAcList, USERRATING, null);
+    initUserCompareData(selected_users, USERACCOUNT, USERRATING, USERABILITY);
 }
 
 let getDataFromServer = function(url){
@@ -776,7 +934,8 @@ let getDataFromServer = function(url){
     });
 }
 
-require(['domready!', 'datatable', 'calheatmap', 'echarts'], function(doc, DataTable, CalHeatMap, echarts){
+require(['domready!', 'datatable', 'echarts'], function(doc, DataTable, echarts){
+
     ECHARTS = echarts;
     let initUsersAbilityData = function(){
         // {
@@ -907,21 +1066,57 @@ require(['domready!', 'datatable', 'calheatmap', 'echarts'], function(doc, DataT
 
     let processUserACListDATA = function(response_data){
         USERACLIST = response_data;
-        let ac_count = {};
         response_data.forEach(function(data, index){
-            ac_count[data['user__username']] = (ac_count[data['user__username']] || 0) + 1;
             let user_info = USERACINFO[data['user__username']] || {};
             let repo_info = user_info[data['repo']] || {};
-            let user_count = USERACCOUNT[data['user__username']] || [];
             repo_info[data['label']] = data['actime'];
             user_info[data['repo']] = repo_info;
-            user_count.push([data['actime'], ac_count[data['user__username']]]);
             USERACINFO[data['user__username']] = user_info;
-            USERACCOUNT[data['user__username']] = user_count;
             if(REPO.indexOf(data['repo']) == -1){
                 REPO.push(data['repo']);
             }
+
+            // EVERYDAYINFO 
+            let tmpTime = parseInt((new Date(data['actime'])).getTime() / 86400000) * 86400000;
+            let userInfo = (EVERYDAYINFO[data['user__username']] || {});
+            let dayInfo = (userInfo[tmpTime] || {});
+            dayInfo[data['repo']] = (dayInfo[data['repo']] || []);
+            dayInfo[data['repo']].push(data['label']);
+            userInfo[tmpTime] = dayInfo;
+            EVERYDAYINFO[data['user__username']] = userInfo;
         });
+    }
+
+    let processEveryDayInfo = function(){
+        for(let user in EVERYDAYINFO){
+            let time_list = Object.keys(EVERYDAYINFO[user]);
+            time_list.sort(function(a, b){
+                return a - b;
+            });
+            let userSum = 0;
+            USERACCOUNT[user] = [];
+            EVERYDAYCOUNT[user] = [];
+            EVERYDAYAVGRATING[user] = [];
+            time_list.forEach(function(time, index){
+                let date = (new Date(parseInt(time))).Format("yyyy-MM-dd");
+                let proCount = 0;
+                let proRating = 0;
+                for(let repo in EVERYDAYINFO[user][time]){
+                    proCount += EVERYDAYINFO[user][time][repo].length;
+                    EVERYDAYINFO[user][time][repo].forEach(function(label, index){
+                        try{
+                            proRating += (PROBLEMRATING[repo][label] || 1500);
+                        }catch(e){
+                            proRating += 1500;
+                        }
+                    });
+                }
+                userSum += proCount;
+                USERACCOUNT[user].push([date, userSum]);
+                EVERYDAYCOUNT[user].push([date, proCount]);
+                EVERYDAYAVGRATING[user].push([date, proRating / proCount, user]);
+            });
+        }
     }
 
     let processUsersInfoData = function(response_data){
@@ -938,7 +1133,22 @@ require(['domready!', 'datatable', 'calheatmap', 'echarts'], function(doc, DataT
     }
 
     let processUserRatingData = function(response_data){
-        USERRATING = response_data;
+        for(let repo in response_data){
+            USERRATING[repo] = {};
+            for(let user in response_data[repo]){
+                USERRATING[repo][user] = [];
+                response_data[repo][user].forEach(function(data, index){
+                    let len = USERRATING[repo][user].length;
+                    let time = parseInt((new Date(data['date'])).getTime() / 86400000) * 86400000;
+                    let rating = data['rating'];
+                    if(len != 0 && USERRATING[repo][user][len - 1][0] == time){
+                        USERRATING[repo][user][len - 1][1] = rating;
+                    }else{
+                        USERRATING[repo][user].push([time, rating, user]);
+                    }
+                });
+            }
+        }
     }
 
     let processProblemClassifyData = function(response_data){
@@ -1014,6 +1224,7 @@ require(['domready!', 'datatable', 'calheatmap', 'echarts'], function(doc, DataT
     let processProblemMaterial = function(){
         return new Promise(function(resolve, reject){
             Promise.all([processProblemRating(), processProblemClassify()]).then(function(){
+                processEveryDayInfo();
                 initUsersAbilityData();
                 resolve();
             });
