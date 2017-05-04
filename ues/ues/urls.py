@@ -67,6 +67,6 @@ urlpatterns += [
     ]))
 ]
 
-# urlpatterns = [
-#     url(r'^ues/', include(urlpatterns))
-# ]
+urlpatterns = [
+    url(r'^ues/', include(urlpatterns))
+]
