@@ -1,0 +1,182 @@
+{% extends "ues/frame.html" %}
+{% load squads_filters %}
+{% load pagination_tags %}
+{% block title %} 所在小组 {% endblock %}
+{% block page_css %}
+<style type="text/css">
+    .table{  
+      table-layout: fixed;  
+    }  
+    .table td{  
+      text-overflow: ellipsis;  
+      overflow: hidden;  
+      white-space: nowrap;  
+    }
+</style>
+{% endblock %}
+{% block contain %}
+</style>
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1> 我所在的小组 </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i>小组</a></li>
+            <li class="active">所在小组</li>
+        </ol>
+    </section>
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title"> 小组信息 </h3>
+                        <div class="box-tools pull-right"> 
+                            <button type="button" class="btn btn-sm" id="new-squad-user-btn" disabled="disabled" title="暂不可用"><i class="fa fa-plus"></i> 加入新小组</button>
+                        </div>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body no-padding">
+                        <table class="table">
+                            <tr>
+                                <th width="30%">小组名称</th>
+                                <th width="30%">创建者</th>
+                                <th width="30%">组内姓名</th>
+                                <th width="30%">组内昵称</th>
+                                <th width="20%">加入时间</th>
+                                <th style="width: 150px; text-align: center;">管理</th>
+                            </tr>
+                        {% autopaginate squads_users 15 %}
+                        {% for user in squads_users %}
+                            <tr>
+                                <td> {{ user.squads.name }} </td>
+                                <td> {{ user.squads.create_user }} </td>
+                                <td> {{ user.name }} </td>
+                                <td> {{ user.nickname }} </td>
+                                <td> {{ user.create_date|date:"Y-m-d" }} </td>
+                                <td style="text-align: center;">
+                                    <a href="{% url 'squads_getinfo' squads_id=user.squads.id %}"> 进入 </a> |
+                                    <a href="javascript:void(0);" onclick="edit_squads_user({{ user|edit_squads_user_param }});" class="text-green"> 修改 </a> |
+                                    <a href="javascript:void(0);" onclick="delete_squads_user({{ user|delete_squads_user_param}})" class="text-red"> 退出 </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </table>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="box-footer clearfix">
+                        <ul class="pagination pagination-sm no-margin pull-right">
+                            {% paginate %}
+                        </ul>
+                    </div>
+                </div>
+                <!-- /.box -->
+            </div>
+            <div class="col-md-4">
+                <!-- general form elements disabled -->
+                <div class="box box-primary" id="squad-user-edit-div" hidden>
+                    <form role="form" method="post" action="{% url 'squadsusers_update' %}" id="squad-user-edit-form">
+                        <div class="box-header with-border">
+                            <h3 class="box-title">编辑组内个人信息</h3>
+                        </div>
+                        <!-- /.box-header -->
+                        <div class="box-body">
+                            <!-- text input -->
+                            <div class="form-group" id="squad-name">
+                                <label>小组名称</label>
+                                <input type="text" class="form-control" name="squad-name" readonly="readonly">
+                            </div>
+                            <!-- text input -->
+                            <div class="form-group" id="squad-create-user">
+                                <label>创建者</label>
+                                <input type="text" class="form-control" name="create-user" readonly="readonly">
+                            </div>
+                            <!-- text input -->
+                            <div class="form-group" id="user-name">
+                                <label>组内姓名</label>
+                                <input type="text" class="form-control" name="user-name" placeholder="Enter...">
+                            </div>
+                            <!-- textarea -->
+                            <div class="form-group" id="user-nickname">
+                                <label>组内昵称</label>
+                                <input type="text" class="form-control" name="user-nickname" placeholder="Enter...">
+                            </div>
+<!--                             <div class="form-group" id="squad-users">
+                                <label>小组成员</label>
+                                <select class="form-control select2" multiple="multiple" name="squad-users-select"></select>
+                            </div>
+                        </div>
+ -->                        <!-- /.box-body -->
+                        <input type="text" name="user-id" hidden>
+                        <div class="box-footer">
+                            <input type="submit" id="squad-user-edit-submit-btn" class="btn btn-primary pull-right" value="提交">
+                        </div>
+                        <!-- /.box-footer -->
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+{% block page_js %}
+<script type="text/javascript">
+
+let getDataFromServer = function(url, method, data){
+    return new Promise(function (resolve, reject){
+        $.ajax({
+            url: url,
+            data: data,
+            type: method,
+            cache: false,
+            dataType: "json",
+            processData: false,
+            contentType: false,
+            success: function(response_data){
+                resolve(response_data);
+            },
+            error: function(){
+                reject(new Error('error'));
+            }
+        });
+    });
+}
+
+let edit_squads_user = function(userid, name, create_user, username, usernickname, edit_user_url){
+    $("input[name='user-id']").val(userid);
+    $("input[name='squad-name']").val(name);
+    $("input[name='user-name']").val(username);
+    $("input[name='create-user']").val(create_user);
+    $("input[name='user-nickname']").val(usernickname);
+    $("#squad-user-edit-div").removeAttr("hidden");
+}
+
+let delete_squads_user = function(url){
+    let result = confirm("确认退出？");
+    if(result){
+        let data = null;
+        let method = "GET";
+        getDataFromServer(url, method, data).then(function(response_data){
+            alert(response_data['status']+'\n'+ response_data['message']);
+            location.reload(true);
+        });
+    }
+}
+
+$('#squad-user-edit-form').submit(function(){
+    let method = "POST";
+    let url = $(this).attr("action");
+    let data = new FormData($(this)[0]);
+    getDataFromServer(url, method, data).then(function(response_data){
+        alert(response_data['status']+'\n'+ response_data['message']);
+        location.reload(true);
+    });
+    return false;
+});
+
+</script>
+{% endblock %}

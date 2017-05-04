@@ -42,6 +42,7 @@ class Squads(BaseModel):
     def get_squads_users_rating_json(self, repo):
         cache_str = 'squads_users_rating_json'
         result = cache.get(cache_str)
+        result = None
         if result is None:
             result = {}
             if repo is None:

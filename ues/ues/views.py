@@ -12,3 +12,9 @@ def index(request):
     result = Material.get_all_problem_classify_json()
     # print result
     return render(request, 'ues/index.html',{'result': result})
+
+def server_error_view(request):
+    return render(request, 'ues/500.html', {})
+
+def page_not_found_view(request):
+    return render(request, 'ues/404.html', {})

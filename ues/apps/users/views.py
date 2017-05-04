@@ -122,3 +122,8 @@ def get_user_rating_json(request):
     user = request.user
     user_rating = user.get_user_rating_json_by_repo()
     return HttpResponse(json.dumps(user_rating, ensure_ascii=False))
+
+def get_all_user_name(request):
+    user_names = User.get_all_username()
+    result = {'data': list(user_names)}
+    return HttpResponse(json.dumps(result, ensure_ascii=False))

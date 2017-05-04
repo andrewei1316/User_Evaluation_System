@@ -1,0 +1,248 @@
+{% extends "ues/frame.html" %}
+{% load squads_filters %}
+{% load pagination_tags %}
+{% block title %} 小组管理 {% endblock %}
+{% block page_css %}
+<style type="text/css">
+    .table{  
+      table-layout: fixed;  
+    }  
+    .table td{  
+      text-overflow: ellipsis;  
+      overflow: hidden;  
+      white-space: nowrap;  
+    }
+</style>
+{% endblock %}
+{% block contain %}
+</style>
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1> 我所管理的小组 </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i>小组</a></li>
+            <li class="active">小组管理</li>
+        </ol>
+    </section>
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title"> 小组信息 </h3>
+                        <div class="box-tools pull-right"> 
+                            <button type="button" class="btn btn-sm" id="new-squad-btn"><i class="fa fa-plus"></i> 添加小组</button>
+                        </div>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body no-padding">
+                        <table class="table">
+                            <tr>
+                                <th width="30%">小组名称</th>
+                                <th width="26%">创建者</th>
+                                <th width="16%">创建时间</th>
+                                <th width="40%">小组简介</th>
+                                <th style="width: 150px; text-align: center;">管理</th>
+                            </tr>
+                        {% autopaginate squads 15 %}
+                        {% for squad in squads %}
+                            <tr>
+                                <td> {{ squad.name }} </td>
+                                <td> {{ squad.create_user }} </td>
+                                <td> {{ squad.create_date|date:"Y-m-d" }} </td>
+                                <td title="{{ squad.description }}"> {{ squad.description }} </td>
+                                <td style="text-align: center;">
+                                    <a href="{% url 'squads_getinfo' squads_id=squad.id %}"> 进入 </a> |
+                                    <a href="javascript:void(0);" onclick="edit_squads({{ squad|edit_js_param }})" class="text-green"> 修改 </a> |
+                                    <a href="javascript:void(0);" onclick="delete_squads({{ squad|delete_js_param }})" class="text-red"> 删除 </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </table>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="box-footer clearfix">
+                        <ul class="pagination pagination-sm no-margin pull-right">
+                            {% paginate %}
+                        </ul>
+                    </div>
+                </div>
+                <!-- /.box -->
+            </div>
+            <div class="col-md-4">
+                <!-- general form elements disabled -->
+                <div class="box box-primary" id="squad-edit-div" hidden>
+                    <form role="form" method="post" action="{% url 'squads_create_update' %}" id="squad-edit-form">
+                        <div class="box-header with-border">
+                            <h3 class="box-title">编辑小组信息</h3>
+                        </div>
+                        <!-- /.box-header -->
+                        <div class="box-body">
+                            <!-- text input -->
+                            <div class="form-group" id="squad-id">
+                                <label>小组编号</label>
+                                <input type="text" class="form-control" name="squad-id" readonly="readonly">
+                            </div>
+                            <!-- text input -->
+                            <div class="form-group" id="squad-create-user">
+                                <label>创建者</label>
+                                <input type="text" class="form-control" value="{{ request.user.username }}" name="create-user" readonly="readonly">
+                            </div>
+                            <!-- text input -->
+                            <div class="form-group" id="squad-name">
+                                <label>小组名称</label>
+                                <input type="text" class="form-control" name="squad-name" placeholder="Enter...">
+                            </div>
+                            <!-- textarea -->
+                            <div class="form-group" id="squad-description">
+                                <label>小组简介</label>
+                                <textarea class="form-control" rows="3" placeholder="Enter ..." name="squad-description"></textarea>
+                            </div>
+                            <div class="form-group" id="squad-users">
+                                <label>小组成员</label>
+                                <select class="form-control select2" multiple="multiple" name="squad-users-select"></select>
+                            </div>
+                        </div>
+                        <!-- /.box-body -->
+                        <input type="text" name="type" hidden>
+                        <div class="box-footer">
+                            <input type="submit" id="squad-edit-submit-btn" class="btn btn-primary pull-right" value="提交">
+                        </div>
+                        <!-- /.box-footer -->
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+{% block page_js %}
+<script type="text/javascript">
+
+let ALL_USER_NAME = [];
+
+let getDataFromServer = function(url, method, data){
+    return new Promise(function (resolve, reject){
+        $.ajax({
+            url: url,
+            data: data,
+            type: method,
+            cache: false,
+            dataType: "json",
+            processData: false,
+            contentType: false,
+            success: function(response_data){
+                resolve(response_data);
+            },
+            error: function(){
+                reject(new Error('error'));
+            }
+        });
+    });
+}
+
+let init_user_select = function(selected_user, all_user){
+    try{
+        $("select[name='squad-users-select']").html('');
+        $("select[name='squad-users-select']").select2("destroy");
+    }catch(ex){
+        console.error('error'+ex);
+    }
+
+    let user_select = $("select[name='squad-users-select']").select2({
+        data: all_user,
+        allowClear: true,
+        placeholder: '在此搜索并添加用户',
+    });
+
+    user_select.val(selected_user).trigger("change");
+}
+
+let edit_squads = function(id, name, create_user, description, squad_url){
+    $("input[name='squad-id']").val(id);
+    $("input[name='type']").val("update");
+    $("input[name='squad-name']").val(name);
+    $("input[name='create-user']").val(create_user);
+    $("textarea[name='squad-description']").val(description);
+    $("#squad-edit-div").removeAttr("hidden");
+    let all_user_url = "{% url 'users_allusername' %}";
+    if(ALL_USER_NAME.length == 0){
+        Promise.all([getDataFromServer(all_user_url, 'GET', []), getDataFromServer(squad_url, 'GET', [])]).then(function(response_data){
+            let all_user = [];
+            let user_list = response_data[0]['data'];
+            user_list.forEach(function(user, index){
+                all_user.push({'id': user, 'text': user});
+            });
+            ALL_USER_NAME = all_user;
+
+            let selected_user = [];
+            user_list = response_data[1];
+            user_list.forEach(function(user, index){
+                selected_user.push(user['user']);
+            });
+            init_user_select(selected_user, ALL_USER_NAME);
+        });
+    }else{
+        getDataFromServer(squad_url, 'GET', []).then(function(response_data){
+            let selected_user = [];
+            user_list = response_data;
+            user_list.forEach(function(user, index){
+                selected_user.push(user['user']);
+            });
+            init_user_select(selected_user, ALL_USER_NAME);
+        });
+    }
+}
+
+let delete_squads = function(url){
+    let result = confirm("确认删除？");
+    if(result){
+        getDataFromServer(url, 'GET', []).then(function(response_data){
+            alert(response_data['status']+'\n'+ response_data['message']);
+            location.reload(true);
+        });
+    }
+}
+
+require(['domready!', 'select2'], function(doc, select2){
+    $("#new-squad-btn").click(function(){
+        $("input[name='squad-id']").val('');
+        $("input[name='type']").val("create");
+        $("input[name='squad-name']").val('');
+        $("input[name='create-user']").val('{{ request.user.username }}');
+        $("textarea[name='squad-description']").val('');
+        $("#squad-edit-div").removeAttr("hidden");
+        let url = "{% url 'users_allusername' %}";
+        if(ALL_USER_NAME.length == 0){
+            getDataFromServer(url).then(function(response_data){
+                let data = [];
+                let user_list = response_data['data'];
+                user_list.forEach(function(user, index){
+                    data.push({'id': user, 'text': user});
+                });
+                ALL_USER_NAME = data;
+                init_user_select([], ALL_USER_NAME);
+            });
+        }else{
+            init_user_select([], ALL_USER_NAME);
+        }
+    });
+
+    $('#squad-edit-form').submit(function(){
+        let method = 'POST';
+        let url = $(this).attr("action");
+        let data = new FormData($(this)[0]);
+        getDataFromServer(url, method, data).then(function(response_data){
+            alert(response_data['status']+'\n'+ response_data['message']);
+            location.reload(true);
+        });
+        return false;
+    });
+});
+</script>
+{% endblock %}

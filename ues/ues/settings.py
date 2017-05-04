@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'squads',
     'material',
     'ojstatus',
+    'pagination',
     'django.contrib.auth',
     'django.contrib.admin',
     'django.contrib.sessions',
@@ -58,6 +59,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'pagination.middleware.PaginationMiddleware',
     'core.requestmiddleware.MyMiddleware',
 )
 

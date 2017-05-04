@@ -141,11 +141,11 @@
             <!-- /.box-header -->
             <div class="box-body">
                 <div class="col-md-5">
-                    <div style="height: 500px;" id="ability-distribution">
+                    <div style="height: 560px;" id="ability-distribution">
                     </div>
                 </div>
                 <div class="col-md-7">
-                    <div style="height: 500px;" id="ability-distribution-sub">
+                    <div style="height: 560px;" id="ability-distribution-sub">
                     </div>
                 </div>
             </div>
@@ -581,117 +581,35 @@
         });
     }
 
-    let initAbilityDistribution = function(problemAcDict, problemClassify, problemRating, classify, echarts){
-        // {
-        //     '数据结构': {
-        //         'sum': 9999,
-        //         'count': 122,
-        //     },
-        //     ...
-        // }
-        let overall_info = {};
-
-        let dp_info = {};
-        let ds_info = {};
-        let nt_info = {};
-        let geom_info = {};
-        let graph_info = {};
-
-        let maxRating = 0;
-        let minRating = 10000000;
-        for(let repo in problemAcDict){
-            for(let label in problemAcDict[repo]){
-                let subClass, rating;
-                try{
-                    rating = (problemRating[repo][label] || 1500);
-                }catch(e){
-                    rating = 1500;
-                }
-                try{
-                    subClass = problemClassify[repo][label];
-                    if(subClass[0] == undefined){
-                        throw('空类型');
-                    }
-                }catch(e){
-                    subClass = ['其他'];
-                }
-
-                subClass.forEach(function(cla, index){
-                    // 主类数据
-                    mainClass = classify[cla] || '其他';
-                    let overall_pcr = (overall_info[mainClass] || {'sum': 0, 'count': 0});
-                    overall_pcr['sum'] += rating;
-                    overall_pcr['count'] += 1;
-                    overall_info[mainClass] = overall_pcr;
-
-                    // 子类数据
-                    if(mainClass === '图论'){
-                        let graph_pcr = (graph_info[cla] || {'sum': 0, 'count': 0});
-                        graph_pcr['sum'] += rating;
-                        graph_pcr['count'] += 1;
-                        graph_info[cla] = graph_pcr;
-                    }else if(mainClass === '计算几何'){
-                        let geom_pcr = (geom_info[cla] || {'sum': 0, 'count': 0});
-                        geom_pcr['sum'] += rating;
-                        geom_pcr['count'] += 1;
-                        geom_info[cla] = geom_pcr;
-
-                    }else if(mainClass === '数据结构'){
-                        let ds_pcr = (ds_info[cla] || {'sum': 0, 'count': 0});
-                        ds_pcr['sum'] += rating;
-                        ds_pcr['count'] += 1;
-                        ds_info[cla] = ds_pcr;
-                    }else if(mainClass === '动态规划'){
-                        let dp_pcr = (dp_info[cla] || {'sum': 0, 'count': 0});
-                        dp_pcr['sum'] += rating;
-                        dp_pcr['count'] += 1;
-                        dp_info[cla] = dp_pcr;
-                    }else if(mainClass === '数学'){
-                        let nt_pcr = (nt_info[cla] || {'sum': 0, 'count': 0});
-                        nt_pcr['sum'] += rating;
-                        nt_pcr['count'] += 1;
-                        nt_info[cla] = nt_pcr;
-                    }
-                });
-                maxRating = rating > maxRating ? rating : maxRating;
-                minRating = rating > minRating ? minRating : rating;
-            }
+    let initAbilityDistribution = function(userAbility, classify, echarts){
+        maxRating = 0;
+        minRating = 100000;
+        for(let item in userAbility){
+            userAbility[item].forEach(function(data, index){
+                maxRating = maxRating > data ? maxRating: data;
+                minRating = minRating > data ? data: minRating;
+            });
         }
-
         maxRating += 100;
         minRating -= 100;
-        let ds_data = {'value': [], 'indicator': []};
-        let dp_data = {'value': [], 'indicator': []};
-        let nt_data = {'value': [], 'indicator': []};
-        let graph_data = {'value': [], 'indicator': []};
-        let geom_data = {'value': [], 'indicator': []};
-        let overall_data = {'value': [], 'indicator': []};
 
-        for(let cla in dp_info){
-            dp_data['indicator'].push({'name': cla, 'min': minRating, 'max': maxRating});
-            dp_data['value'].push(dp_info[cla]['sum']/dp_info[cla]['count']);
-        }
-        for(let cla in ds_info){
-            ds_data['indicator'].push({'name': cla, 'min': minRating, 'max': maxRating});
-            ds_data['value'].push(ds_info[cla]['sum']/ds_info[cla]['count']);
-        }
-        for(let cla in nt_info){
-            nt_data['indicator'].push({'name': cla, 'min': minRating, 'max': maxRating});
-            nt_data['value'].push(nt_info[cla]['sum']/nt_info[cla]['count']);
-        }
-        for(let cla in graph_info){
-            graph_data['indicator'].push({'name': cla, 'min': minRating, 'max': maxRating});
-            graph_data['value'].push(graph_info[cla]['sum']/graph_info[cla]['count']);
-        }
-        for(let cla in geom_info){
-            geom_data['indicator'].push({'name': cla, 'min': minRating, 'max': maxRating});
-            geom_data['value'].push(geom_info[cla]['sum']/geom_info[cla]['count']);
-        }
-
-        for(let cla in overall_info){
-            overall_data['indicator'].push({'name': cla, 'min': minRating, 'max': maxRating});
-            overall_data['value'].push(overall_info[cla]['sum']/overall_info[cla]['count']);
-        }
+        indicator = {};
+        indicator['overall'] = [];
+        classify.forEach(function(data, index){
+            indicator['overall'].push({
+                'min': minRating,
+                'max': maxRating,
+                'name': data['main_class']
+            });
+            indicator[data['main_class']] = [];
+            data['sub_class'].forEach(function(sub, index){
+                indicator[data['main_class']].push({
+                    'name': sub,
+                    'min': minRating,
+                    'max': maxRating
+                });
+            });
+        });
 
         let dom = document.getElementById("ability-distribution");
         let myChart = echarts.init(dom);
@@ -701,14 +619,14 @@
                 trigger: 'item'
             },
             radar: {
-                indicator: overall_data['indicator'],
+                indicator: indicator['overall'],
                 center: ['48%','50%'],
             },
             series: [{
                 name: '算法能力分布',
                 type: 'radar',
                 data : [{
-                    value : overall_data['value'],
+                    value : userAbility['overall'],
                     name : '算法能力分布',
                     type: 'radar',
                     label: {
@@ -739,27 +657,27 @@
             },
             radar: [
                 {
-                    indicator: ds_data['indicator'],
+                    indicator: indicator['数据结构'],
                     center: ['22%','30%'],
                     radius: 80
                 },
                 {
-                    indicator: graph_data['indicator'],
+                    indicator: indicator['图论'],
                     radius: 80,
                     center: ['78%','30%'],
                 },
                 {
-                    indicator: dp_data['indicator'],
+                    indicator: indicator['动态规划'],
                     center: ['50%','60%'],
                     radius: 80
                 },
                 {
-                    indicator: nt_data['indicator'],
+                    indicator: indicator['数学'],
                     center: ['22%','85%'],
                     radius: 80
                 },
                 {
-                    indicator: geom_data['indicator'],
+                    indicator: indicator['计算几何'],
                     radius: 80,
                     center: ['78%','85%'],
                 },
@@ -773,7 +691,7 @@
                     itemStyle: {normal: {areaStyle: {type: 'default'}}},
                     data: [
                         {
-                            value: ds_data['value'],
+                            value: userAbility['数据结构'],
                             name: '数据结构'
                         }
                     ]
@@ -787,7 +705,7 @@
                     radarIndex: 1,
                     data: [
                         {
-                            value: graph_data['value'],
+                            value: userAbility['图论'],
                             name: '图论'
                         },
                     ]
@@ -802,7 +720,7 @@
                     data: [
                         {
                             name: '动态规划',
-                            value: dp_data['value'],
+                            value: userAbility['动态规划'],
                         },
                     ]
                 },
@@ -815,7 +733,7 @@
                     radarIndex: 3,
                     data: [
                         {
-                            value: nt_data['value'],
+                            value: userAbility['数学'],
                             name: '数学'
                         },
                     ]
@@ -829,7 +747,7 @@
                     radarIndex: 4,
                     data: [
                         {
-                            value: geom_data['value'],
+                            value: userAbility['计算几何'],
                             name: '计算几何'
                         },
                     ]
@@ -925,7 +843,8 @@ require(['domready!', 'echarts'], function(doc, echarts){
     //     '半平面交': '计算几何',
     //     ...
     // }
-    let CLASSIFY = {};
+    let CLASSIFYDICT = {};
+    let CLASSIFY = [];
 
     // {
     //     'Pku': {
@@ -940,6 +859,15 @@ require(['domready!', 'echarts'], function(doc, echarts){
     let PROBLEMACDICT = {};
     let PROBLEMACLIST = [];
     let USERRATING = {};
+
+    // {
+    //     'overall': [xxx, xxx, ...],
+    //     'mainclass1': [xxx, xxx],
+    //     'mainclass2': [xxx, xxx],
+    //     ...
+    // }
+    let USERABILITY = {};
+
     Date.prototype.Format = function (fmt) { //author: meizz 
         var o = {
             "M+": this.getMonth() + 1, //月份 
@@ -1041,8 +969,102 @@ require(['domready!', 'echarts'], function(doc, echarts){
     }
 
     let processProblemClassifyData = function(response_data){
-        CLASSIFY = response_data['all_classify'];
+        CLASSIFYDICT = response_data['all_classify'];
         PROBLEMCLASSIFY = response_data['problem_classify'];
+
+        for(let subClass in CLASSIFYDICT){
+            let flag = false;
+            let mainClass = CLASSIFYDICT[subClass];
+            for(let i = 0; i < CLASSIFY.length; i++){
+                if(CLASSIFY[i]['main_class'] == mainClass){
+                    CLASSIFY[i]['sub_class'].push(subClass);
+                    flag = true;
+                    break;
+                }
+            }
+            if(!flag){
+                CLASSIFY.push({'main_class': mainClass, 'sub_class': [subClass]});
+            }
+        }
+        // {
+        //     'total': {
+        //         'mainclass1': {
+        //             'sum': xxx,
+        //             'count': xxx
+        //         },
+        //         ...
+        //     },
+        //     'mainclass1': {
+        //         'subclass1': {
+        //             'sum': xxx,
+        //             'count': xxx
+        //         },
+        //         ...
+        //     },
+        //     ...
+        // }
+        let overall_info = {};
+
+        for(let repo in PROBLEMACDICT){
+            for(let label in PROBLEMACDICT[repo]){
+                let subClass, rating;
+                try{
+                    rating = (PROBLEMRATING[repo][label] || 1500);
+                }catch(e){
+                    rating = 1500;
+                }
+                try{
+                    subClass = PROBLEMCLASSIFY[repo][label];
+                    if(subClass[0] == undefined){
+                        throw('空类型');
+                    }
+                }catch(e){
+                    subClass = ['其他'];
+                }
+                subClass.forEach(function(cla, index){
+                    // 主类数据
+                    let mainClass = CLASSIFYDICT[cla] || '其他';
+                    let total = (overall_info['total'] || {});
+                    let overall_pcr = (total[mainClass] || {'sum': 0, 'count': 0});
+                    overall_pcr['sum'] += rating;
+                    overall_pcr['count'] += 1;
+                    total[mainClass] = overall_pcr;
+                    overall_info['total'] = total;
+
+                    let main_class = (overall_info[mainClass] || {});
+                    let sub_class = (main_class[cla] || {'sum': 0, 'count': 0});
+                    sub_class['sum'] += rating;
+                    sub_class['count'] += 1;
+                    main_class[cla] = sub_class;
+                    overall_info[mainClass] = main_class;
+                });
+            }
+        }
+        let mainClass, subClass;
+        USERABILITY['overall'] = [];
+        CLASSIFY.forEach(function(data, index){
+            try{
+                mainClass = overall_info['total'][data['main_class']];
+                if(mainClass === undefined){
+                    throw('空类型');
+                }
+            }catch(e){
+                mainClass = {'sum': 0, 'count': 1};
+            }
+            USERABILITY['overall'].push(mainClass['sum'] / mainClass['count']);
+            USERABILITY[data['main_class']] = [];
+            data['sub_class'].forEach(function(cla, index){
+                try{
+                    subClass = overall_info[data['main_class']][cla];
+                    if(subClass === undefined){
+                        throw('空类型');
+                    }
+                }catch(e){
+                    subClass = {'sum': 0, 'count': 1};
+                }
+                USERABILITY[data['main_class']].push(subClass['sum'] / subClass['count']);
+            });
+        });
     }
 
     let processACList = function(){
@@ -1089,7 +1111,7 @@ require(['domready!', 'echarts'], function(doc, echarts){
         Promise.all([processEveryDayInfo(), processProblemClassify()]).then(function(){
             initOJProportion(PROBLEMACDICT, PROBLEMRATING, OJORDER, CONFIG.rating, echarts);
             initEveryDayCountRating(EVERYDAYCOUNT, EVERYDAYAVGRATING, echarts);
-            initAbilityDistribution(PROBLEMACDICT, PROBLEMCLASSIFY, PROBLEMRATING, CLASSIFY, echarts);
+            initAbilityDistribution(USERABILITY, CLASSIFY, echarts);
         });
         processUserRating().then(function(){
             initProblemCountUserRating(EVERYDAYCOUNT, USERRATING, echarts);

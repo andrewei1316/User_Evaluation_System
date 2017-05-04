@@ -1,0 +1,192 @@
+{% extends "ues/frame.html" %}
+{% load pagination_tags %}
+{% load squads_filters %}
+{% block title %} 题目分类 {% endblock %}
+{% block page_css %}
+{% endblock %}
+{% block contain %}
+</style>
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1> 题目的难度和分类 </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i>题目</a></li>
+            <li class="active">题目属性</li>
+        </ol>
+    </section>
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="box box-primary">
+                    <form method="GET" action="{% url 'mate_problemmaterial' %}">
+                        <div class="box-header">
+                            <h3 class="box-title"> 题目过滤 </h3>
+                        </div>
+                        <div class="box-body">
+                            <div class="form-group">
+                                <label>题目来源</label>
+                                <div class="checkbox">
+                                {% for r in repo %}
+                                    <label class="checkbox-inline">
+                                        <input type="checkbox" value="{{ r }}" name="search-repos"> {{ r }}
+                                    </label>
+                                {% endfor %}
+                                </div>
+                            </div>
+                            <!-- text input -->
+                            <div class="form-group">
+                                <label>题目标号</label>
+                                <textarea class="form-control" rows="3" name="search-labels" placeholder="多个标签用空格隔开"></textarea>
+                            </div>
+                        </div>
+                        <div class="box-footer">
+                            <button type="submit" class="btn btn-primary pull-right">过滤</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title"> 题目信息 </h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <table class="table">
+                            <tr>
+                                <th>题目来源</th>
+                                <th>题目标号</th>
+                                <th>题目难度</th>
+                                <th>题目分类</th>
+                                <th>更改</th>
+                            </tr>
+                        {% autopaginate material 50 %}
+                        {% for mate in material %}
+                            <tr>
+                                <td> {{ mate.repo }} </td>
+                                <td> {{ mate.label }} </td>
+                                <td> {{ mate.rating }} </td>
+                                <td title="{{ mate.get_classify }}"> {{ mate.get_classify }} </td>
+                                <td>
+                                    <a href="javascript:void(0);" onclick="change_classify({{ mate|edit_classify_param }});"> 修改 </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </table>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="box-footer clearfix">
+                        <ul class="pagination pagination-sm no-margin pull-right">
+                            {% paginate %}
+                        </ul>
+                    </div>
+                </div>
+                <!-- /.box -->
+            </div>
+        </div>
+    </section>
+    <!-- /.content -->
+    <!-- Modal -->
+    <div class="modal fade" id="material-edit-div" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form role="form" method="POST" id="material-edit-form" action="{% url 'mate_update' %}">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">更改题目分类</h4>
+                    </div>
+                    <div class="modal-body">
+                        <!-- text input -->
+                        <div class="form-group">
+                            <label>题目来源</label>
+                            <input type="text" class="form-control" name="mate-repo" readonly="readonly">
+                        </div>
+                        <!-- text input -->
+                        <div class="form-group">
+                            <label>题目标号</label>
+                            <input type="text" class="form-control" name="mate-label" readonly="readonly">
+                        </div>
+                        <div class="form-group">
+                            <label>题目分类</label>
+                            <select class="form-control select2" style="width: 100%;" multiple="multiple" name="mate-classify">
+                            {% for cla in classify %}
+                                <optgroup label="{{ cla.chinesename }}">
+                                {% for sub in cla.children.all %}
+                                    <option value="{{ sub.id }}"> {{ sub.chinesename }} </option>
+                                {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="close-modal" class="btn btn-default" data-dismiss="modal">关闭</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Button trigger modal -->
+    <button type="button" id="material-edit-btn" data-toggle="modal" data-target="#material-edit-div" hidden></button>
+</div>
+<!-- /.content-wrapper -->
+{% endblock %}
+{% block page_js %}
+<script type="text/javascript">
+let change_classify = function(repo, label, classify_str){
+    let classify_list = JSON.parse(classify_str);
+    $("input[name='mate-repo']").val(repo);
+    $("input[name='mate-label']").val(label);
+    let mate_classify = $('.select2').select2({
+        allowClear: true,
+        placeholder: '在此搜索分类',
+    });
+    mate_classify.val(classify_list).trigger("change");
+    $("#material-edit-btn").click();
+}
+
+let getDataFromServer = function(url, method, data){
+    return new Promise(function (resolve, reject){
+        $.ajax({
+            url: url,
+            data: data,
+            type: method,
+            cache: false,
+            dataType: "json",
+            processData: false,
+            contentType: false,
+            success: function(response_data){
+                resolve(response_data);
+            },
+            error: function(){
+                reject(new Error('error'));
+            }
+        });
+    });
+}
+
+require(['domready!', 'select2', 'icheck'], function(doc, select2, iCheck){
+    $("input[name='search-repos']").iCheck({
+        checkboxClass: 'icheckbox_square-blue',
+        radioClass: 'iradio_square-blue',
+        increaseArea: '20%' // optional
+    });
+    $("#material-edit-form").submit(function(){
+        let method = 'POST';
+        let url = $(this).attr("action");
+        let data = new FormData($(this)[0]);
+        getDataFromServer(url, method, data).then(function(response_data){
+            alert(response_data['status']+'\n'+ response_data['message']);
+            location.reload(true);
+        });
+        $("#close-modal").click();
+        return false;
+    });
+});
+
+</script>
+{% endblock %}

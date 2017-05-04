@@ -25,6 +25,7 @@ class ClassifyAdmin(admin.ModelAdmin):
     list_filter = ('codename', 'chinesename')
     list_display = ('id', 'codename', 'chinesename')
     search_fields = ('id', 'codename', 'chinesename')
+    filter_horizontal = ('children',)
 
 
 class BackgroundKnowledgeAdmin(admin.ModelAdmin):
@@ -34,6 +35,8 @@ class BackgroundKnowledgeAdmin(admin.ModelAdmin):
     list_filter = ('classify__chinesename',)
     search_fields = ('id', 'repo', 'label', 'classify')
     list_display = ('id', 'repo', 'label', 'get_classify')
+
+    filter_horizontal = ('classify',)
 
     def get_classify(self, obj):
         return '|'.join([c.chinesename for c in obj.classify.all() ])

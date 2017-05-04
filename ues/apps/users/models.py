@@ -95,6 +95,10 @@ class User(AbstractBaseUser, PermissionsMixin):
             email=email, last_login=timezone.now())
         return user
 
+    @classmethod
+    def get_all_username(cls):
+        users = cls.objects.filter(is_active=True).values_list('username', flat=True)
+        return users
 
 class AccountBind(models.Model):
     ojs = ['Zju', 'Pku', 'Hdu', 'CF', 'PAT', 'USACO']

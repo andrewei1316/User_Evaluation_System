@@ -83,12 +83,22 @@
             </li>
             <li>
                 <a href="{% url 'squads_getinfo' squads_id=1 %}">
-                    <i class="fa fa-group"></i> <span>我所在的组</span>
+                    <i class="fa fa-bar-chart"></i> <span>我的小组</span>
                 </a>
             </li>
             <li>
-                <a href="{% url 'squads_getinfo' squads_id=1 %}">
-                    <i class="fa fa-gears"></i> <span>训练小组管理</span>
+                <a href="{% url 'squads_get_own_info' %}">
+                    <i class="fa fa-th"></i> <span>小组管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'squadsusers_getinfo' %}">
+                    <i class="fa fa-tags"></i> <span>所在小组</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'mate_problemmaterial' %}">
+                    <i class="fa fa-wrench"></i> <span>分类修正</span>
                 </a>
             </li>
         </ul>

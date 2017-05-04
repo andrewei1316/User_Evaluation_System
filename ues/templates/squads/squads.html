@@ -17,14 +17,23 @@
     <section class="content">
         <div class="row">
             <div class="col-md-8">
-                <div class="box" id="squads-div">
-                    <div class="box-header">
-                        <h3 class="box-title">成员题数</h3>
+                <!-- Custom Tabs -->
+                <div class="nav-tabs-custom">
+                    <ul class="nav nav-tabs">
+                        <li class="active"><a href="#pro-count-table" data-toggle="tab">成员题数</a></li>
+                        <li><a href="#pro-rating-table" id="problem-rating-tab" data-toggle="tab">成员Rating</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="pro-count-table">
+                            <table id="problem-count-table"></table>
+                        </div>
+                        <!-- /.tab-pane -->
+                        <div class="tab-pane" id="pro-rating-table">
+                            <table id="problem-rating-table"></table>
+                        </div>
+                        <!-- /.tab-pane -->
                     </div>
-                    <!-- /.box-header -->
-                    <div class="box-body">
-                        <table id="problem-count-table"></table>
-                    </div>
+                    <!-- /.tab-content -->
                     <div class="box-footer" id="user-info" hidden>
                         <label>最近动态</label>
                         <table class="table table-hover" id="last-message"></table>
@@ -33,9 +42,8 @@
                         <label>OJ所占比例及难度分布</label>
                         <div id="oj-proportion" style="height: 545px;"></div>
                     </div>
-                    <!-- /.box-body -->
-                </div>
-                <!-- /.box -->
+              </div>
+              <!-- nav-tabs-custom -->
             </div>
             <div class="col-md-4">
                 <!-- box -->
@@ -200,6 +208,12 @@
     //     ...
     // }
     let CLASSIFYDICT = {};
+
+    // [
+    //     'mainclass1': ['subclass1', 'subclass2'...],
+    //     'mainclass2': ['subclass1', 'subclass2'...],
+    //     ...
+    // ]
     let CLASSIFY = [];
     // {
     //     'Pku': {
@@ -683,13 +697,20 @@ let initUserCompareCharts = function(){
 }
 
 let showUserInfo = function(username, tableData){
-    let oTable = $('#problem-count-table').DataTable();
-    tableData.forEach(function(data, index){
+    let oCountTable = $('#problem-count-table').DataTable();
+    let oRatingTable = $('#problem-rating-table').DataTable();
+    oCountTable.rows(function(idx, data, node){
         if(data['username'] == username){
-            oTable.clear().draw();
-            oTable.rows.add([data]);
-            oTable.columns.adjust().draw();
-            return false;
+            $(node).removeClass("hidden");
+        }else{
+            $(node).addClass("hidden");
+        }
+    });
+    oRatingTable.rows(function(idx, data, node){
+        if(data['username'] == username){
+            $(node).removeClass("hidden");
+        }else{
+            $(node).addClass("hidden");
         }
     });
 
@@ -757,8 +778,71 @@ let initSquadsUsersInfo = function(problem_data, users_info){
     });
 }
 
-let initProblemCountTable = function(columns, data, aoColumnDefs){
+let initProblemCountTable = function(columns, data){
+    let aoColumnDefs = [{
+        "orderable": false,
+        "targets": 0
+    },{
+        "aTargets" :　["_all"],
+        'class': 'center',
+        "defaultContent": 0,
+        "bSortable": true,
+    }];
     $('#problem-count-table').DataTable({
+        "data": data,
+        "info": false,
+        "paging": false,
+        "autoWidth": true,
+        "processing": true,
+        "searching": false,
+        "bAutoWidth": true,
+        "columns": columns,
+        "aoColumnDefs": aoColumnDefs,
+        "order": [[ columns.length - 1, "desc" ]],
+    });
+}
+
+let initUserAbilityTable = function(userAcInfo, userAbility, classify, userRating){
+    let data = [];
+    let columns = [{'title': '用户名', 'data': 'username'}];
+    for(let user in userAcInfo){
+        let sum = 0;
+        let user_data = {};
+        user_data['username'] = user;
+        for(let i = 0; i < classify.length; i++){
+            let cla = classify[i]['main_class'];
+            user_data[cla] = parseInt(userAbility[user]['overall'][i]);
+        }
+        let rating = 0;
+        let repo_cnt = 0;
+        for(let repo in userRating){
+            try{
+                let len = userRating[repo][user].length;
+                rating += userRating[repo][user][len - 1][1];
+                repo_cnt += 1;
+            }catch(e){}
+        }
+        if(repo_cnt == 0){rating=0, repo_cnt=1;}
+        user_data['ELO'] = parseInt(rating / repo_cnt);
+        data.push(user_data);
+    }
+    classify.forEach(function(cla, index){
+        columns.push({'title': cla['main_class'], 'data': cla['main_class']});
+    });
+    columns.push({'title': 'ELO', 'data': 'ELO'});
+    data.sort(function(a, b){
+        return b['ELO'] - a['ELO'];
+    });
+    let aoColumnDefs = [{
+        "orderable": false,
+        "targets": 0
+    },{
+        "aTargets" :　["_all"],
+        'class': 'center',
+        "defaultContent": 0,
+        "bSortable": true,
+    }];
+    $('#problem-rating-table').DataTable({
         "data": data,
         "info": false,
         "paging": false,
@@ -809,6 +893,7 @@ let initUserCompareData = function(selectedUsers, UserAcCount, userRating, userA
     problem_count_option.series = problem_count_series;
     problem_count_chart.setOption(problem_count_option, true);
 
+    let problem_every_day_count_legend = [];
     let problem_every_day_count_series = [];
     selectedUsers.forEach(function(user, index){
         let series = {};
@@ -816,15 +901,17 @@ let initUserCompareData = function(selectedUsers, UserAcCount, userRating, userA
         series['type'] = 'line';
         series['data'] = EVERYDAYCOUNT[user];
         problem_every_day_count_series.push(series);
+        problem_every_day_count_legend.push({'name': user});
     });
 
     let problem_every_day_count_dom = document.getElementById("problem-every-day-count-line");
     let problem_every_day_count_chart = ECHARTS.getInstanceByDom(problem_every_day_count_dom);
     let problem_every_day_count_option = problem_every_day_count_chart.getOption();
-    problem_every_day_count_option.legend = {data: selectedUsers};
+    problem_every_day_count_option.legend = {data: problem_every_day_count_legend};
     problem_every_day_count_option.series = problem_every_day_count_series;
     problem_every_day_count_chart.setOption(problem_every_day_count_option, true);
 
+    let problem_every_day_rating_legend = [];
     let problem_every_day_rating_series = [];
     selectedUsers.forEach(function(user, index){
         let series = {};
@@ -832,11 +919,12 @@ let initUserCompareData = function(selectedUsers, UserAcCount, userRating, userA
         series['type'] = 'line';
         series['data'] = EVERYDAYAVGRATING[user];
         problem_every_day_rating_series.push(series);
+        problem_every_day_rating_legend.push({'name': user});
     });
     let problem_every_day_rating_dom = document.getElementById("problem-every-day-rating-line");
     let problem_every_day_rating_chart = ECHARTS.getInstanceByDom(problem_every_day_rating_dom);
     let problem_every_day_rating_option = problem_every_day_rating_chart.getOption();
-    problem_every_day_rating_option.legend = {data: selectedUsers};
+    problem_every_day_rating_option.legend = {data: problem_every_day_rating_legend};
     problem_every_day_rating_option.series = problem_every_day_rating_series;
     problem_every_day_rating_chart.setOption(problem_every_day_rating_option, true);
 
@@ -851,19 +939,6 @@ let initUserCompareData = function(selectedUsers, UserAcCount, userRating, userA
             series['smooth'] = true;
             series['data'] = userRating[repo][user];
             series['itemStyle'] = { 'normal': {'opacity': 0}};
-            // series['markPoint'] = {
-            //     'data': [{
-            //         type: 'max',
-            //         name: USERRATING[repo][user][0][2] || '',
-            //         label:{
-            //             normal:{
-            //                 formatter: function(data){
-            //                     return data['data']['name'];
-            //                 }
-            //             }
-            //         }
-            //     }]
-            // };
             users_rating_series.push(series);
         });
     }
@@ -1031,15 +1106,6 @@ require(['domready!', 'datatable', 'echarts'], function(doc, DataTable, echarts)
     let initProblemCountData = function(userAcInfo){
         let data = [];
         let columns = [{'title': '用户名', 'data': 'username'}];
-        let aoColumnDefs = [{
-            "orderable": false,
-            "targets": 0
-        },{
-            "aTargets" :　["_all"],
-            'class': 'center',
-            "defaultContent": 0,
-            "bSortable": true,
-        }];
         for(let user in userAcInfo){
             let sum = 0;
             let user_data = {};
@@ -1060,7 +1126,7 @@ require(['domready!', 'datatable', 'echarts'], function(doc, DataTable, echarts)
             return b['Sum'] - a['Sum'];
         });
         initSquadsUsersInfo(data, USERSINFO);
-        initProblemCountTable(columns, data, aoColumnDefs);
+        initProblemCountTable(columns, data);
         initSelectedUserList(data);
     }
 
@@ -1235,6 +1301,7 @@ require(['domready!', 'datatable', 'echarts'], function(doc, DataTable, echarts)
         initProblemCountData(USERACINFO);
         Promise.all([processProblemMaterial(), processUserRating()]).then(function(){
             initUserCompareCharts();
+            initUserAbilityTable(USERACINFO, USERABILITY, CLASSIFY, USERRATING);
         });
     });
 });

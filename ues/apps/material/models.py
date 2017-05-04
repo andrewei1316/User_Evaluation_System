@@ -22,11 +22,15 @@ class Material(models.Model):
         unique_together = (('repo', 'label'),)
         index_together = [['repo', 'label'],]
 
+    def get_classify(self):
+        return '|'.join([c.chinesename for c in self.classify.all() ])
+
 
     @classmethod
     def get_all_problem_rating_json(cls):
         cache_str = 'all_problem_rating_json'
         result = cache.get(cache_str)
+        result = None
         if result is None:
             material = cls.objects.all()
             repos = set(material.values_list('repo', flat=True))
@@ -78,7 +82,7 @@ class Material(models.Model):
 
 class BackgroundKnowledge(models.Model):
     id = models.AutoField(primary_key=True)
-    repo = models.CharField(max_length=20, verbose_name=_(u"题目类型"))
+    repo = models.CharField(max_length=20, default='Pku', verbose_name=_(u"题目类型"))
     label = models.CharField(max_length=45, verbose_name=_(u"题目编号"))
     classify = models.ManyToManyField('material.Classify', default=None,
                                         blank=True, verbose_name=_(u"题目分类"))
