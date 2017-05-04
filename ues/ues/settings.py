@@ -17,6 +17,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 import sys
+import requests
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -27,9 +28,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'x(vaa(8=k1z3z&wu!1%a#(zj9xn=rgiqt4oju2evhk!=n_cl6^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
+
+if 'test' not in sys.argv:
+    try:
+        mysql_setting = requests.get(
+            'http://172.17.1.4:8009/services/mysql-01/configures/production/').json()['data']
+    except Exception, e:
+        print 'Getting configures failed, maybe etcc is not running.'
+        raise
 
 
 # Application definition
@@ -96,17 +105,17 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ues_db',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': '127.0.0.1',
+        'USER': mysql_setting['USER'],
+        'HOST': mysql_setting['HOST'],
+        'PASSWORD': mysql_setting['PASSWORD'],
         'PORT': '3306',
     },
     'onlinejudge_db': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'fishteam_onlinejudge',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': '127.0.0.1',
+        'USER': mysql_setting['USER'],
+        'HOST': mysql_setting['HOST'],
+        'PASSWORD': mysql_setting['PASSWORD'],
         'PORT': '3306',
     },
 }
