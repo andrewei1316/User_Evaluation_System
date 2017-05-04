@@ -37,8 +37,7 @@
 <script type="text/javascript" src="{% static 'js/require/require.js' %}"></script>
 <script type="text/javascript">
     require.config({
-        urlArgs: "bust=" + (new Date()).getTime(),
-        baseUrl: '/static/',
+        baseUrl: '{% static '' %}',
         paths: {
             app: 'js/app.min',
             jquery: 'js/jquery-2.2.3.min',
