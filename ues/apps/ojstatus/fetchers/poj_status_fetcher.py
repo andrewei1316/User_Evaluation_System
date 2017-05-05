@@ -13,7 +13,7 @@ def logging(msg, lv):
     ISOTIMEFORMAT = "%Y-%m-%d %X"
     logtime = time.strftime(ISOTIMEFORMAT, time.localtime())
     lvstr = ["MASSAGE", "WARNING", "ERROR  "]
-    print lvstr[lv], logtime, ":", msg
+    print 'POJ', lvstr[lv], logtime, ":", msg
 
 
 class POJ_fetcher(object):
