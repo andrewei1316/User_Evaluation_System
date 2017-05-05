@@ -3,6 +3,7 @@
 
 import json
 from material.models import Material, Classify
+from material.models import BackgroundKnowledge
 from django.shortcuts import render, HttpResponse
 
 # Create your views here.
@@ -23,9 +24,6 @@ def get_all_problem_material(request):
 
     search_repos = request.REQUEST.getlist('search-repos')
     search_labels = request.GET.get('search-labels')
-
-    print search_labels
-    print search_repos
 
     if search_repos is not None and search_repos != []:
         material = material.filter(repo__in=search_repos)
@@ -54,6 +52,8 @@ def update_material(request):
         try:
             cla_id = [int(i) for i in classify_str]
             mate.classify = cla_id
+            bk, created = BackgroundKnowledge.objects.get_or_create(repo=repo, label=label)
+            bk.classify = cla_id
         except Exception, ex:
             result['status'] = 'failure'
             result['message'] = '添加分类出现错误'

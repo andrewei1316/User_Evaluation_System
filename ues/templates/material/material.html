@@ -10,7 +10,9 @@
 <div class="content-wrapper">
     <!-- Content Header (Page header) -->
     <section class="content-header">
-        <h1> 题目的难度和分类 </h1>
+        <h1> 题目的难度和分类
+            <small>更改的题目分类会作为以后的分类依据，请谨慎选择.</small>
+        </h1>
         <ol class="breadcrumb">
             <li><a href="#"><i class="fa fa-dashboard"></i>题目</a></li>
             <li class="active">题目属性</li>
@@ -173,7 +175,7 @@ require(['domready!', 'select2', 'icheck'], function(doc, select2, iCheck){
     $("input[name='search-repos']").iCheck({
         checkboxClass: 'icheckbox_square-blue',
         radioClass: 'iradio_square-blue',
-        increaseArea: '20%' // optional
+        increaseArea: '20%'
     });
     $("#material-edit-form").submit(function(){
         let method = 'POST';

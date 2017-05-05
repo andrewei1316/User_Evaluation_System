@@ -14,9 +14,6 @@ venv/
 *.swp
 .codeintel/
 .tags
-*.gif
-*.png
-*.jpg
 test.py
 KindEditor/
 attached/
