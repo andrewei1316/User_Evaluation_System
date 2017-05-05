@@ -10,10 +10,10 @@ from ojstatus.models import OJStatus
 
 
 def logging(msg, lv):
-    ISOTIMEFORMAT = "%Y-%m-%d %X"
-    logtime = time.strftime(ISOTIMEFORMAT, time.localtime())
-    lvstr = ["MASSAGE", "WARNING", "ERROR  "]
-    print 'POJ', lvstr[lv], logtime, ":", msg
+    # ISOTIMEFORMAT = "%Y-%m-%d %X"
+    # logtime = time.strftime(ISOTIMEFORMAT, time.localtime())
+    # lvstr = ["MASSAGE", "WARNING", "ERROR  "]
+    print 'POJ %s'% (msg, )
 
 
 class POJ_fetcher(object):
