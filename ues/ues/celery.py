@@ -27,11 +27,11 @@ app.conf.update(
     CELERYBEAT_SCHEDULE={
         'update_poj_status': {
             'task': 'ojstatus.tasks.update_poj_status',
-            'schedule': crontab(hour=17, minute=5, day_of_week=5),
+            'schedule': crontab(hour=17, minute=15, day_of_week=5),
         },
         'update_hdu_status': {
             'task': 'ojstatus.tasks.update_hdu_status',
-            'schedule': crontab(hour=17, minute=5, day_of_week=5),
+            'schedule': crontab(hour=17, minute=15, day_of_week=5),
         },
     },
     CELERY_TIMEZONE=settings.TIME_ZONE,
