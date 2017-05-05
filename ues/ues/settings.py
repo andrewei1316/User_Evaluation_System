@@ -29,16 +29,22 @@ SECRET_KEY = 'x(vaa(8=k1z3z&wu!1%a#(zj9xn=rgiqt4oju2evhk!=n_cl6^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-
-ALLOWED_HOSTS = ["*"]
-
-if 'test' not in sys.argv:
+if 'runserver' in sys.argv:
+    DEBUG = True
+    try:
+        mysql_setting = requests.get(
+            'http://127.0.0.1:8009/services/mysql-01/configures/production/').json()['data']
+    except Exception, e:
+        mysql_setting = {"USER": 'root', 'POSSWORD': 'root', "HOST": '127.0.0.1'}
+elif 'test' not in sys.argv:
     try:
         mysql_setting = requests.get(
             'http://172.17.1.4:8009/services/mysql-01/configures/production/').json()['data']
     except Exception, e:
         print 'Getting configures failed, maybe etcc is not running.'
         raise
+
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition

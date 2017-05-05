@@ -30,7 +30,6 @@ class Material(models.Model):
     def get_all_problem_rating_json(cls):
         cache_str = 'all_problem_rating_json'
         result = cache.get(cache_str)
-        result = None
         if result is None:
             material = cls.objects.all()
             repos = set(material.values_list('repo', flat=True))
@@ -47,7 +46,6 @@ class Material(models.Model):
     def get_all_problem_classify_json(cls):
         cache_str = 'all_problem_classify_json'
         result = cache.get(cache_str)
-        result = None
         if result is None:
             material = cls.objects.all().values(
                 'repo', 'label', 'classify__chinesename')
