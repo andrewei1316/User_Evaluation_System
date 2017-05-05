@@ -35,7 +35,7 @@ if 'runserver' in sys.argv:
         mysql_setting = requests.get(
             'http://127.0.0.1:8009/services/mysql-01/configures/production/').json()['data']
     except Exception, e:
-        mysql_setting = {"USER": 'root', 'POSSWORD': 'root', "HOST": '127.0.0.1'}
+        mysql_setting = {"USER": 'root', 'PASSWORD': 'root', "HOST": '127.0.0.1'}
 elif 'test' not in sys.argv:
     try:
         mysql_setting = requests.get(
@@ -153,4 +153,8 @@ STATIC_URL = '/ues/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/admin/')
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
+)
+
+CELERY_IMPORTS = (
+    'ojstatus.tasks',
 )

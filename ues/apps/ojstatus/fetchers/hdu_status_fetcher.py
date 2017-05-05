@@ -114,7 +114,7 @@ class HDU_fetcher(object):
         status_array = []
         for s in status:
             # sarr = tuple(s[key] for key in self.fileds)
-            is_ac = 1 if s['status'] = self.oj['AC'] else 0
+            is_ac = 1 if s['status'] == self.oj['AC'] else 0
             uarr = (0, s['runid'], s['user'], s['repo'], s['label'], 1, is_ac, s['submittime'])
             uach_array.append(uarr)
             # status_array.append(sarr)
