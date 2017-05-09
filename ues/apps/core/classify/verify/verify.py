@@ -27,6 +27,7 @@ class VerifyProblemClassify(object):
         self.FN = {}
         self.REPO = repo
         self.CASE_CNT = 0
+        self.CON_MATRIX = {}
         self.IGNORED_OTHERS = ignored_others
 
         # 得到正元组和负元组总数
@@ -46,6 +47,15 @@ class VerifyProblemClassify(object):
 
         # 初始化所有分类的 P N TP TN FP FN
         self.CLASSIFY = Classify.objects.filter(children=None)
+        for classify in self.CLASSIFY:
+            cla = classify.chinesename
+            self.CON_MATRIX[cla] = {}
+            for classify1 in self.CLASSIFY:
+                cla1 = classify1.chinesename
+                self.CON_MATRIX[cla][cla1] =0
+
+        # 初始化所有分类的 P N TP TN FP FN
+        self.CLASSIFY = Classify.objects.filter(children=None)
         for cla in self.CLASSIFY:
             self.P[cla.chinesename] = 0
             self.N[cla.chinesename] = 0
@@ -54,39 +64,71 @@ class VerifyProblemClassify(object):
             self.FP[cla.chinesename] = 0
             self.FN[cla.chinesename] = 0
 
-        # print self.VERIFY_DATA
 
-    def get_classify_TP_TN_FP_FN(self):
-        total_cnt = 0
+    # def get_classify_TP_TN_FP_FN(self):
+    #     total_cnt = 0
+    #     for classify in self.CLASSIFY:
+    #         cla = classify.chinesename
+    #         for label in self.VERIFY_DATA[cla]:
+    #             try:
+    #                 pro_cla = self.MATERIAL[label].classify.all()[0].chinesename
+    #                 if (pro_cla == u'其他' or cla == u'其他') and self.IGNORED_OTHERS:
+    #                     continue
+    #                 total_cnt += 1
+    #                 self.P[cla] += 1
+    #                 if pro_cla == cla:
+    #                     self.TP[cla] += 1
+    #                 else:
+    #                     self.FN[cla] += 1
+    #                     self.FP[pro_cla] += 1
+    #             except Exception, ex:
+    #                 logging(ex, 2)
+    #                 continue
+
+    #     for cla in self.CLASSIFY:
+    #         for c in self.CLASSIFY:
+    #             if cla.chinesename == c.chinesename: continue
+    #             self.TN[cla.chinesename] += self.TP[c.chinesename]
+
+    #     for classify in self.CLASSIFY:
+    #         cla = classify.chinesename
+    #         self.N[cla] = total_cnt - self.P[cla]
+
+    def get_classify_con_matrix(self):
         for classify in self.CLASSIFY:
             cla = classify.chinesename
             for label in self.VERIFY_DATA[cla]:
                 try:
+                    # for pro_cla in self.MATERIAL[label].classify.all():
                     pro_cla = self.MATERIAL[label].classify.all()[0].chinesename
                     if (pro_cla == u'其他' or cla == u'其他') and self.IGNORED_OTHERS:
                         continue
-                    total_cnt += 1
-                    self.P[cla] += 1
-                    if pro_cla == cla:
-                        self.TP[cla] += 1
-                    else:
-                        self.FN[cla] += 1
-                        self.FP[pro_cla] += 1
+                    self.CON_MATRIX[cla][pro_cla] += 1
+
                 except Exception, ex:
                     logging(ex, 2)
                     continue
 
-        for cla in self.CLASSIFY:
-            for c in self.CLASSIFY:
-                if cla.chinesename == c.chinesename: continue
-                self.TN[cla.chinesename] += self.TP[c.chinesename]
+    def get_classify_TP_TN_FP_FN(self):
+        right_cnt = 0
+        classify_list = self.CON_MATRIX.keys()
+        classify_cnt = len(classify_list)
+        for cla in classify_list:
+            for cla1 in classify_list:
+                self.P[cla] += self.CON_MATRIX[cla][cla1]
+                if cla == cla1:
+                    right_cnt += self.CON_MATRIX[cla][cla1]
+                    self.TP[cla] += self.CON_MATRIX[cla][cla1]
+                else:
+                    self.FP[cla1] += self.CON_MATRIX[cla][cla1]
+                    self.FN[cla] += self.CON_MATRIX[cla][cla1]
 
-        for classify in self.CLASSIFY:
-            cla = classify.chinesename
-            self.N[cla] = total_cnt - self.P[cla]
+        for cla in classify_list:
+            self.TN[cla] = right_cnt - self.TP[cla]
+            self.N[cla] = self.CASE_CNT - self.P[cla]
 
     def print_classify_TP_TN_FP_FN(self):
-        print 'classify\tP\tN\tTP\tTN\tFP\tFN\tACC'
+        print 'classify\tP\tN\tTP\tTN\tFP\tFN\t召回率'
         for classify in self.CLASSIFY:
             cla = classify.chinesename
             print "%s\t\t%d\t%d\t%d\t%d\t%d\t%d\t%.5f" % (cla[0:3], self.P[cla], self.N[cla], self.TP[cla],
@@ -104,5 +146,6 @@ def main(ignored_others=True, repo='Pku'):
     else:
         verify_data = {}
     verify_problem_classify = VerifyProblemClassify(verify_data, repo, ignored_others)
+    verify_problem_classify.get_classify_con_matrix()
     verify_problem_classify.get_classify_TP_TN_FP_FN()
     verify_problem_classify.print_classify_TP_TN_FP_FN()
