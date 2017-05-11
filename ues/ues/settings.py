@@ -158,3 +158,5 @@ STATICFILES_DIRS = (
 CELERY_IMPORTS = (
     'ojstatus.tasks',
 )
+
+TMP_CHDIR = os.path.join(STATICFILES_DIRS[0], 'tmp')
