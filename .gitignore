@@ -9,6 +9,7 @@
 migrations/
 local_settings.py
 venv/
+tmp/
 .idea/
 *~
 *.swp
