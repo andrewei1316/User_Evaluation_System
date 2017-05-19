@@ -88,7 +88,7 @@ class POJ_fetcher(object):
                 'runid': int(m.group('runid')),
                 'repo': self.oj['POJ'],
                 'label': m.group('label'),
-                'user': m.group('user'), 
+                'user': m.group('user'),
                 'status': m.group('status'),
                 'runtime': m.group('runtime'),
                 'runmemory': m.group('runmemory'),
@@ -149,7 +149,7 @@ class POJ_fetcher(object):
             time.sleep(0.5)
 
 def run_fetcher():
-    logging('POJ fetcher start!', 0)
+    logging('Fetcher start!', 0)
     fetcher = POJ_fetcher(quiet=True)
     fetcher.main(None, None, datetime.datetime.today())
-    logging('POJ fetcher stop!', 0)
+    logging('Fetcher stop!', 0)

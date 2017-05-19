@@ -154,7 +154,7 @@ class HDU_fetcher(object):
             time.sleep(0.2)
 
 def run_fetcher():
-    logging('HDU fetcher start!', 0)
+    logging('Fetcher start!', 0)
     fetcher = HDU_fetcher(quiet=True)
     fetcher.main(None, None, datetime.datetime.today())
-    logging('HDU fetcher stop!', 0)
+    logging('Fetcher stop!', 0)

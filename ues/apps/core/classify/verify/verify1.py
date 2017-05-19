@@ -33,7 +33,7 @@ class VerifyProblemClassify(object):
         self.IGNORED_OTHERS = ignored_others
 
         # 得到正元组和负元组总数
-        # self.VERIFY_DATA = {} 
+        # self.VERIFY_DATA = {}
         self.VERIFY_DATA = verify_data
         for cla in verify_data:
             # for label in verify_data[cla]:
@@ -129,7 +129,7 @@ class VerifyProblemClassify(object):
             bks_cnt = BackgroundKnowledge.objects.filter(classify=classify).count()
             add_cnt = cnt / (bks_cnt + cnt)
             print 'label =', label, 'cla =', cla, ', bks_cnt =', bks_cnt, ', cnt =', cnt
-            if add_cnt > 0.3:
+            if add_cnt > 0.3 and cnt > 1:
                 try:
                     bk = BackgroundKnowledge()
                     bk.repo = self.REPO

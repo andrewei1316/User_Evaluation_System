@@ -3,8 +3,8 @@
 
 from __future__ import division
 import time
+from material.models import Material, Classify
 from core.classify.verify.verify_data import PROBLEM_CLASSIFY
-from material.models import Material, Classify, BackgroundKnowledge
 
 def logging(msg, lv):
     # pass
@@ -31,7 +31,7 @@ class VerifyProblemClassify(object):
         self.IGNORED_OTHERS = ignored_others
 
         # 得到正元组和负元组总数
-        # self.VERIFY_DATA = {} 
+        # self.VERIFY_DATA = {}
         self.VERIFY_DATA = verify_data
         for cla in verify_data:
             # for label in verify_data[cla]:
@@ -101,13 +101,13 @@ class VerifyProblemClassify(object):
                 try:
                     # for pro_cla in self.MATERIAL[label].classify.all():
                     pro_cla = self.MATERIAL[label].classify.all()[0].chinesename
-                    if (pro_cla == u'其他' or cla == u'其他') and self.IGNORED_OTHERS:
-                        continue
-                    self.CON_MATRIX[cla][pro_cla] += 1
-
                 except Exception, ex:
                     logging(ex, 2)
+                    pro_cla = u'其他'
+                if (pro_cla == u'其他' or cla == u'其他') and self.IGNORED_OTHERS:
                     continue
+                self.CON_MATRIX[cla][pro_cla] += 1
+
 
     def get_classify_TP_TN_FP_FN(self):
         right_cnt = 0

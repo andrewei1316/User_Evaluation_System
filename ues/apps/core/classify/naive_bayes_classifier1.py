@@ -144,10 +144,10 @@ class ProblemClassify(object):
                 for k in range(cla_bks_count):
                     if int(cla_bks_list[k].label) not in self.PROBLEM_RELATION[j]:
                         continue
-                    time_rat = self.PROBLEM_RELATION[j][int(cla_bks[k])][0]
-                    dex_rat = self.PROBLEM_RELATION[j][int(cla_bks[k])][1]
+                    time_rat = self.PROBLEM_RELATION[j][int(cla_bks[k].label)][0]
+                    dex_rat = self.PROBLEM_RELATION[j][int(cla_bks[k].label)][1]
                     rela_rat += time_rat * 0.5 + dex_rat * 0.5
-                    rela_cnt += self.PROBLEM_RELATION[j][int(cla_bks[k])][2]
+                    rela_cnt += self.PROBLEM_RELATION[j][int(cla_bks[k].label)][2]
                 self.PROBLEM_VECTOR[j][i] = rela_rat / rela_cnt if rela_cnt else 0.0001
         logging("Make problem vector finish", 0)
 
@@ -317,10 +317,10 @@ def main(repo='Pku'):
         problem_classify = ProblemClassify(classify, repo, users_list, int(max_label)+1)
         # problem_classify.problem_relation()
         # problem_classify.write_problem_relation()
-        # problem_classify.read_problem_relation()
-        # problem_classify.problem_vector()
+        problem_classify.read_problem_relation()
+        problem_classify.problem_vector()
         # problem_classify.write_problem_vector()
-        problem_classify.read_problem_vector()
+        # problem_classify.read_problem_vector()
         # problem_classify.print_problem_vector()
         problem_classify.calculate_probability()
         problem_classify.classify_problem()

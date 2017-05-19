@@ -27,11 +27,15 @@ app.conf.update(
     CELERYBEAT_SCHEDULE={
         'update_poj_status': {
             'task': 'ojstatus.tasks.update_poj_status',
-            'schedule': crontab(hour=17, minute=15, day_of_week=5),
+            'schedule': crontab(hour=2, minute=0),
         },
         'update_hdu_status': {
             'task': 'ojstatus.tasks.update_hdu_status',
-            'schedule': crontab(hour=17, minute=15, day_of_week=5),
+            'schedule': crontab(hour=2, minute=0),
+        },
+        'update_squads_user_rating': {
+            'task': 'ojstatus.tasks.update_squads_user_rating',
+            'schedule': crontab(hour=5, minute=0),
         },
     },
     CELERY_TIMEZONE=settings.TIME_ZONE,
@@ -39,7 +43,7 @@ app.conf.update(
 )
 
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
- 
+
 if __name__ == '__main__':
     django.setup()
     app.start()

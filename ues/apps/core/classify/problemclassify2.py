@@ -115,7 +115,7 @@ class ProblemClassify(object):
                 time_rat = float(sub_line[1])
                 dex_rat = float(sub_line[2])
                 rat_cnt = int(sub_line[3])
-                self.PROBLEM_RELATION[label][tar] = [time_rat, dex_rat, rat_cnt]
+                self.PROBLEM_RELATION[label][tar] = [dex_rat, rat_cnt]
                 cnt += 1
                 if cnt == count:
                     opt = 1
@@ -150,8 +150,8 @@ class ProblemClassify(object):
             # print '========== bk ============='
             pro_cnt_res = sorted(pro_cnt.iteritems(), key=lambda x: x[1], reverse=True)
             for pro in pro_cnt_res:
-                if pro[1] < bks_count * 0.65:
-                    break
+                # if pro[1] < bks_count * 0.65:
+                #     break
                 # print '(', pro[0], ', ', pro[1], ')'
                 material = Material.objects.get(repo=self.REPO, label=str(pro[0]))
                 material.classify.add(cla)

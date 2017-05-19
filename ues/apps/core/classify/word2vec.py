@@ -65,7 +65,7 @@ class ProblemVector(object):
     def make_problem_vector(self):
         logging("Start make problem vector...", 0)
         sentences = word2vec.Text8Corpus(self.USER_ACLIST_FILE)
-        # sentences = word2vec.LineSentence(input_name)
+        # sentences = word2vec.LineSentence(self.USER_ACLIST_FILE)
         model = word2vec.Word2Vec(
             sentences = sentences,
             hs = 0,

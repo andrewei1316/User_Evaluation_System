@@ -39,7 +39,7 @@ class Squads(BaseModel):
         users_info = users_list.values('user', 'name', 'nickname')
         return list(users_info)
 
-    def get_squads_users_rating_json(self, repo):
+    def get_squads_users_rating_json(self, repo=None):
         cache_str = 'squads_%d_users_rating_json' % (self.id, )
         result = cache.get(cache_str)
         if result is None:

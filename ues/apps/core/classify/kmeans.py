@@ -51,14 +51,14 @@ class ProblemClassify(object):
                 self.KNOWLEDGE[cla.chinesename].append(know.label)
                 self.REKNOWLEDGE[know.label].append(cla.chinesename)
 
-        from core.classify.verify.verify_data import PROBLEM_CLASSIFY
-        for cla in PROBLEM_CLASSIFY[self.REPO]:
-            self.KNOWLEDGE[cla] = []
-            for label in PROBLEM_CLASSIFY[self.REPO][cla]:
-                self.KNOWLEDGE[cla].append(str(label))
-                if str(label) not in self.REKNOWLEDGE:
-                    self.REKNOWLEDGE[str(label)] = []
-                self.REKNOWLEDGE[str(label)].append(cla)
+        # from core.classify.verify.verify_data import PROBLEM_CLASSIFY
+        # for cla in PROBLEM_CLASSIFY[self.REPO]:
+        #     self.KNOWLEDGE[cla] = []
+        #     for label in PROBLEM_CLASSIFY[self.REPO][cla]:
+        #         self.KNOWLEDGE[cla].append(str(label))
+        #         if str(label) not in self.REKNOWLEDGE:
+        #             self.REKNOWLEDGE[str(label)] = []
+        #         self.REKNOWLEDGE[str(label)].append(cla)
 
     def fetch_data(self, user):
         result = []
