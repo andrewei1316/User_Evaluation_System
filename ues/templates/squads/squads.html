@@ -294,9 +294,12 @@ let initCalHeatMap = function(calHeatMap){
     let time0 = year +'-'+ month +'-01';
     let time1 = cur_year +'-'+ cur_month +'-'+ last_day;
 
-    $('#cal-heatmap').empty();
     let dom = document.getElementById("cal-heatmap");
-    let myChart = ECHARTS.init(dom);
+    let myChart = ECHARTS.getInstanceByDom(dom);
+    if(myChart === undefined){
+        myChart = ECHARTS.init(dom);
+    }
+
     let option = {
         tooltip: {
             position: 'top'
@@ -345,7 +348,7 @@ let initCalHeatMap = function(calHeatMap){
         }]
 
     };
-    myChart.setOption(option);
+    myChart.setOption(option, true);
     window.addEventListener('resize', function () {
         myChart.resize();
     });
@@ -388,9 +391,12 @@ let initOJProportion = function(problemAcList, problemRating, ojOrder, rating){
         });
     });
 
-    $('#oj-proportion').empty();
     let dom = document.getElementById("oj-proportion");
-    let myChart = ECHARTS.init(dom);
+    let myChart = ECHARTS.getInstanceByDom(dom);
+    if(myChart === undefined){
+        myChart = ECHARTS.init(dom);
+    }
+
     let option = {
         tooltip : {
             trigger: 'item',
@@ -441,7 +447,7 @@ let initOJProportion = function(problemAcList, problemRating, ojOrder, rating){
             }
         ]
     };
-    myChart.setOption(option);
+    myChart.setOption(option, true);
     window.addEventListener('resize', function () {
         myChart.resize();
     });
